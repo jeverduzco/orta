@@ -18,7 +18,7 @@ Orta is a Chrome (Manifest V3) extension that **corrects and translates any text
 ## Install (development)
 
 ```bash
-git clone https://github.com/<your-handle>/orta.git
+git clone https://github.com/jeverduzco/orta.git
 cd orta
 npm install
 npm run check       # typecheck + tests + build
