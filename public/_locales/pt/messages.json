@@ -1,0 +1,8 @@
+{
+  "extensionName": {
+    "message": "Orta"
+  },
+  "extensionDescription": {
+    "message": "Corrige e traduz o texto selecionado em qualquer página via Vercel AI Gateway."
+  }
+}

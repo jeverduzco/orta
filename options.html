@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orta Settings</title>
+  </head>
+  <body>
+    <main id="app" class="orta-options-shell">
+      <section class="hero" aria-labelledby="settings-title">
+        <div class="brand-lockup">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path class="spark-main" d="M11 3 L12.6 9.4 L19 11 L12.6 12.6 L11 19 L9.4 12.6 L3 11 L9.4 9.4 Z" fill="currentColor" fill-opacity="0.22" />
+              <path class="spark-mini" d="M18 2 L18.7 4.3 L21 5 L18.7 5.7 L18 8 L17.3 5.7 L15 5 L17.3 4.3 Z" fill="currentColor" fill-opacity="0.22" />
+            </svg>
+          </span>
+          <div>
+            <p class="eyebrow">Orta</p>
+            <h1 id="settings-title" data-i18n="settingsTitle">Ajustes</h1>
+          </div>
+        </div>
+        <p class="hero-copy">
+          <span data-i18n="heroCopy">Corrige y traduce texto directamente donde escribes, sin sacar el foco de la pagina.</span>
+        </p>
+      </section>
+
+      <section class="settings-grid" aria-label="Configuracion de Orta">
+        <form class="panel api-panel" id="api-form">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">Vercel AI Gateway</p>
+              <h2 data-i18n="connectionTitle">Conexion</h2>
+            </div>
+            <span class="status-pill" id="api-status">Sin validar</span>
+          </div>
+
+          <label class="field" for="api-key">
+            <span data-i18n="apiKeyLabel">API Key</span>
+            <span class="input-row">
+              <input
+                id="api-key"
+                type="password"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="vck_..."
+              />
+              <button class="icon-button" id="toggle-key" type="button" aria-label="Mostrar API Key" aria-pressed="false">
+                <svg
+                  class="key-icon key-icon-visible"
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M2.06 12.35a1 1 0 0 1 0-.7 11.75 11.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 11.75 11.75 0 0 1-19.88 0Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg
+                  class="key-icon key-icon-hidden"
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="m15 18-.72-3.25" />
+                  <path d="M2 8a10.65 10.65 0 0 0 20 0" />
+                  <path d="m20 15-1.73-2.05" />
+                  <path d="m4 15 1.73-2.05" />
+                  <path d="m9 18 .72-3.25" />
+                </svg>
+              </button>
+            </span>
+          </label>
+
+          <div class="model-note" aria-label="Modelo configurado">
+            <span data-i18n="modelLabel">Modelo</span>
+            <strong id="model-id">google/gemini-3.5-flash</strong>
+          </div>
+
+          <div class="form-actions">
+            <button class="primary-button" type="submit" data-i18n="saveButton">Guardar</button>
+            <button class="secondary-button" id="test-key" type="button" data-i18n="testConnectionButton">Probar conexion</button>
+          </div>
+        </form>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker" data-i18n="featuresKicker">Funciones</p>
+              <h2 data-i18n="behaviorTitle">Comportamiento</h2>
+            </div>
+          </div>
+
+          <div class="toggle-list">
+            <label class="toggle-row">
+              <span>
+                <strong data-i18n="enableTitle">Activar Orta</strong>
+                <small data-i18n="enableDescription">Muestra el icono sutil en campos editables.</small>
+              </span>
+              <input id="enabled" type="checkbox" role="switch" />
+            </label>
+
+            <label class="toggle-row">
+              <span>
+                <strong data-i18n="correctionTitle">Correccion ortografica</strong>
+                <small data-i18n="correctionDescription">Reescribe conservando idioma, tono y formato.</small>
+              </span>
+              <input id="correction-enabled" type="checkbox" role="switch" />
+            </label>
+
+            <label class="toggle-row">
+              <span>
+                <strong data-i18n="translationTitle">Traduccion</strong>
+                <small data-i18n="translationDescription">Traduce el texto del campo al idioma destino.</small>
+              </span>
+              <input id="translation-enabled" type="checkbox" role="switch" />
+            </label>
+          </div>
+
+          <label class="field compact" for="app-language">
+            <span data-i18n="appLanguageLabel">Idioma de Orta</span>
+            <select id="app-language" aria-label="Idioma de Orta"></select>
+          </label>
+
+          <label class="field compact" for="target-language">
+            <span data-i18n="targetLanguageLabel">Idioma destino</span>
+            <select id="target-language" aria-label="Idioma destino para traduccion"></select>
+          </label>
+        </section>
+
+        <section class="panel blocked-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker" data-i18n="blockedKicker">Sitios desactivados</p>
+              <h2 data-i18n="exclusionsTitle">Exclusiones</h2>
+            </div>
+          </div>
+
+          <form class="blocked-form" id="blocked-form">
+            <label class="field compact" for="blocked-site">
+              <span data-i18n="domainPatternLabel">Dominio o patron</span>
+              <input id="blocked-site" type="text" placeholder="app.example.com o *.empresa.com" />
+            </label>
+            <button class="secondary-button" type="submit" data-i18n="addButton">Agregar</button>
+          </form>
+
+          <ul class="blocked-list" id="blocked-list" aria-live="polite"></ul>
+        </section>
+
+        <section class="panel builtin-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker" data-i18n="builtinBlockedKicker">Seguridad por defecto</p>
+              <h2 data-i18n="builtinBlockedTitle">Sitios bloqueados por seguridad</h2>
+            </div>
+          </div>
+
+          <p class="panel-description" data-i18n="builtinBlockedDescription">
+            Orta no aparece en estos sitios por defecto: bancos, pagos, inicio de sesión y gobierno. Puedes activarlo en uno específico si lo necesitas.
+          </p>
+
+          <details class="builtin-details">
+            <summary class="builtin-summary"><span data-i18n="builtinShowList">Ver lista completa</span></summary>
+            <ul class="blocked-list builtin-list" id="builtin-list" aria-live="polite"></ul>
+          </details>
+        </section>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </main>
+    <script type="module" src="/src/options/options.ts"></script>
+  </body>
+</html>

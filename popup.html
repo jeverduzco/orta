@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orta</title>
+  </head>
+  <body>
+    <main class="popup-shell">
+      <header class="popup-header">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path class="spark-main" d="M11 3 L12.6 9.4 L19 11 L12.6 12.6 L11 19 L9.4 12.6 L3 11 L9.4 9.4 Z" fill="currentColor" fill-opacity="0.22" />
+            <path class="spark-mini" d="M18 2 L18.7 4.3 L21 5 L18.7 5.7 L18 8 L17.3 5.7 L15 5 L17.3 4.3 Z" fill="currentColor" fill-opacity="0.22" />
+          </svg>
+        </span>
+        <div>
+          <p>Orta</p>
+          <strong id="site-status">Loading site…</strong>
+        </div>
+      </header>
+
+      <section class="quick-card">
+        <label class="toggle-row">
+          <span data-popup-label="enabled">Orta enabled</span>
+          <input id="enabled" type="checkbox" role="switch" />
+        </label>
+        <label class="toggle-row">
+          <span data-popup-label="correct">Correct</span>
+          <input id="correction-enabled" type="checkbox" role="switch" />
+        </label>
+        <label class="toggle-row">
+          <span data-popup-label="translate">Translate</span>
+          <input id="translation-enabled" type="checkbox" role="switch" />
+        </label>
+      </section>
+
+      <button class="site-toggle" id="site-toggle" type="button">Disable on this site</button>
+      <button class="settings-button" id="open-options" type="button">Open settings</button>
+    </main>
+    <script type="module" src="/src/popup/popup.ts"></script>
+  </body>
+</html>
