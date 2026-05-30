@@ -157,7 +157,7 @@ shadowRoot.innerHTML = `
       z-index: 999999 !important;
       pointer-events: none !important;
       contain: layout style;
-      color-scheme: light !important;
+      color-scheme: dark !important;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
     }
 
