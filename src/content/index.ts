@@ -157,7 +157,6 @@ shadowRoot.innerHTML = `
       z-index: 999999 !important;
       pointer-events: none !important;
       contain: layout style;
-      color-scheme: dark !important;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
     }
 
@@ -345,25 +344,33 @@ shadowRoot.innerHTML = `
     /* Loading */
     .loading {
       align-items: center;
+      background: linear-gradient(180deg, rgba(24, 26, 34, 0.96), rgba(18, 20, 28, 0.96));
+      backdrop-filter: blur(14px) saturate(135%);
+      -webkit-backdrop-filter: blur(14px) saturate(135%);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 14px;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.25);
       display: flex;
-      gap: 8px;
-      padding: 0 4px;
+      gap: 10px;
+      min-width: 148px;
+      padding: 10px 14px;
     }
 
     .spinner {
-      animation: orta-spin 780ms linear infinite;
-      border: 1.5px solid rgba(255, 255, 255, 0.18);
-      border-top-color: #c4b5fd;
+      animation: orta-spin 820ms linear infinite;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #a78bfa;
       border-radius: 999px;
-      height: 13px;
-      width: 13px;
+      height: 15px;
+      width: 15px;
       flex: 0 0 auto;
     }
 
     .loading-label {
-      color: rgba(220, 222, 232, 0.78);
-      font: 500 11.5px/1.2 ui-sans-serif, system-ui, sans-serif;
-      padding: 7px 4px;
+      color: #e0e2ed;
+      font: 600 12px/1.25 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: -0.006em;
+      padding: 1px 0;
     }
 
     @keyframes orta-spin {
@@ -375,6 +382,81 @@ shadowRoot.innerHTML = `
       color: #fca5a5;
       font: 500 11.5px/1.4 ui-sans-serif, system-ui, sans-serif;
       padding: 6px 4px;
+    }
+
+    /* Light theme overrides (respects prefers-color-scheme) */
+    @media (prefers-color-scheme: light) {
+      .bubble {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 250, 252, 0.96));
+        border: 1px solid rgba(0, 0, 0, 0.09);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.10), 0 3px 8px rgba(0, 0, 0, 0.05);
+        color: #111827;
+      }
+
+      .bubble button {
+        color: #374151;
+      }
+
+      .bubble button:hover,
+      .bubble button:focus-visible {
+        background: rgba(124, 58, 237, 0.10);
+        color: #6d28d9;
+      }
+
+      .result,
+      .loading {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 250, 252, 0.96));
+        border: 1px solid rgba(0, 0, 0, 0.09);
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.10), 0 3px 8px rgba(0, 0, 0, 0.05);
+        color: #111827;
+      }
+
+      .result-title {
+        color: rgba(109, 40, 217, 0.92);
+      }
+
+      .result-close {
+        color: rgba(107, 114, 128, 0.75);
+      }
+
+      .result-close:hover,
+      .result-close:focus-visible {
+        background: rgba(0, 0, 0, 0.05);
+        color: #111827;
+      }
+
+      .result-text {
+        background: rgba(0, 0, 0, 0.03);
+        border-color: rgba(0, 0, 0, 0.08);
+        color: #111827;
+      }
+
+      .result-text[data-no-changes="true"] {
+        border-color: rgba(22, 101, 52, 0.35);
+      }
+
+      .no-changes-badge {
+        color: #166534;
+      }
+
+      .loading-label {
+        color: #1f2937;
+      }
+
+      .spinner {
+        border-color: rgba(0, 0, 0, 0.12);
+        border-top-color: #7c3aed;
+      }
+
+      .error-text {
+        color: #b91c1c;
+      }
+
+      .copy-button.is-done {
+        background: rgba(22, 101, 52, 0.09);
+        border-color: rgba(22, 101, 52, 0.35);
+        color: #166534;
+      }
     }
   </style>
   <div class="panel" id="panel">
