@@ -13,8 +13,9 @@ Orta is a selection tool: the user highlights any text on the page and Orta offe
 - Translation uses a closed list of languages to avoid typos in the target language.
 - The Orta UI language is independent of the translation target language.
 - The popup lets the user turn Orta off globally or just for the current domain.
-- The options page concentrates the API key, global toggles, target language, exclusions, and a list of domains blocked by default for safety (banks, payments, SSO, government).
+- The options page concentrates the API key, global toggles, target language, AI model selection (Flash, Minimax, Grok, DeepSeek via Vercel AI Gateway), exclusions, and a list of domains blocked by default for safety (banks, payments, SSO, government).
 - On pages flagged as sensitive (login/checkout-like URL paths, visible password fields, default-blocked domains), the bubble does not appear.
+- **AI model selection** is available in the Options page. Users can switch between `google/gemini-3.5-flash` (default), `minimax/minimax-m2.7`, `xai/grok-4.3`, and `deepseek/deepseek-v4-flash`. The choice is persisted in `chrome.storage.sync` and used for both correction/translation requests and API key validation against the gateway.
 
 ## MV3 architecture
 
@@ -23,7 +24,7 @@ content script  ─chrome.runtime.sendMessage─▶  background service worker  
 ```
 
 - The content script never calls the provider directly.
-- The service worker validates settings, blocked sites, and the API key before sending text to the model.
+- The service worker validates settings (including the user-selected AI model), blocked sites, and the API key before sending text to the configured model.
 - `chrome.storage.local` holds the API key (so secrets are not synced across browsers).
 - `chrome.storage.sync` holds preferences and excluded sites.
 - `host_permissions` is restricted to `https://ai-gateway.vercel.sh/*`.

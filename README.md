@@ -1,6 +1,6 @@
 # Orta
 
-Orta is a Chrome (Manifest V3) extension that **corrects and translates any text you select** — anywhere on the page. It works on inputs, contenteditable composers, articles, comments, code snippets, anything selectable. Powered by [Vercel AI Gateway](https://vercel.com/ai-gateway) with the `google/gemini-3.5-flash` model.
+Orta is a Chrome (Manifest V3) extension that **corrects and translates any text you select** — anywhere on the page. It works on inputs, contenteditable composers, articles, comments, code snippets, anything selectable. Powered by [Vercel AI Gateway](https://vercel.com/ai-gateway). The AI model is configurable in the Options page.
 
 > Select text → a small bubble appears with **Correct** and **Translate** → result lands in a popover with a **Copy** button. No DOM rewrites, no fighting with rich editors.
 
@@ -13,6 +13,7 @@ Orta is a Chrome (Manifest V3) extension that **corrects and translates any text
 - **Safety by default.** Hidden on bank, payments, SSO, password-manager, and government domains; hidden whenever a visible password field is present or the URL looks like login / checkout / 2FA.
 - **Per-site control.** Popup toggle disables Orta on the current domain. The options page exposes the full built-in blocklist and lets you override individual domains with `!domain.tld`.
 - **i18n.** UI in Spanish, English, and Portuguese — auto-detected from the browser locale on first install.
+- **Configurable AI model.** Choose from multiple providers in the Options page (Connection → AI model). The selected model is used for correction, translation, and API key validation. See the full list in the [Vercel AI Gateway](#vercel-ai-gateway) section.
 - **Privacy.** API key lives in `chrome.storage.local`; preferences in `chrome.storage.sync`. The extension only talks to `https://ai-gateway.vercel.sh/*`.
 
 ## Install (development)
@@ -56,6 +57,15 @@ Orta calls the OpenAI-compatible endpoint:
 ```
 POST https://ai-gateway.vercel.sh/v1/chat/completions
 ```
+
+Supported models (selectable in Options → Connection → AI model):
+
+| Model ID                        | Label                  | Notes     |
+|---------------------------------|------------------------|-----------|
+| `google/gemini-3.5-flash`       | Flash (Gemini 3.5)     | Default   |
+| `minimax/minimax-m2.7`          | Minimax M2.7           |           |
+| `xai/grok-4.3`                  | Grok 4.3 (xAI)         |           |
+| `deepseek/deepseek-v4-flash`    | DeepSeek V4 Flash      |           |
 
 Each user supplies their own API key. If you want to ship Orta with a managed key (e.g. for a published Chrome Web Store build), proxy these requests through your own backend so the key never lives in the extension bundle.
 

@@ -3,6 +3,6 @@
     "message": "Orta"
   },
   "extensionDescription": {
-    "message": "Correct and translate any selected text on any page via Vercel AI Gateway."
+    "message": "Correct and translate any selected text on any page via Vercel AI Gateway. Choose from multiple AI models in settings."
   }
 }
