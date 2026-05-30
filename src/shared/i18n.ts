@@ -55,6 +55,7 @@ type CopyDictionary = {
   featuresKicker: string;
   heroCopy: string;
   modelLabel: string;
+  modelSaved: string;
   removeButton: string;
   saveButton: string;
   settingsTitle: string;
@@ -153,7 +154,8 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     exclusionsTitle: 'Exclusiones',
     featuresKicker: 'Funciones',
     heroCopy: 'Corrige y traduce texto directamente donde escribes, sin sacar el foco de la página.',
-    modelLabel: 'Modelo',
+    modelLabel: 'Modelo de IA',
+    modelSaved: 'Modelo actualizado',
     removeButton: 'Quitar',
     saveButton: 'Guardar',
     settingsTitle: 'Ajustes',
@@ -245,7 +247,8 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     exclusionsTitle: 'Exclusions',
     featuresKicker: 'Features',
     heroCopy: 'Correct and translate text directly where you write, without leaving the page.',
-    modelLabel: 'Model',
+    modelLabel: 'AI model',
+    modelSaved: 'AI model updated',
     removeButton: 'Remove',
     saveButton: 'Save',
     settingsTitle: 'Settings',
@@ -337,7 +340,8 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     exclusionsTitle: 'Exclusões',
     featuresKicker: 'Funções',
     heroCopy: 'Corrige e traduz texto diretamente onde você escreve, sem sair da página.',
-    modelLabel: 'Modelo',
+    modelLabel: 'Modelo de IA',
+    modelSaved: 'Modelo atualizado',
     removeButton: 'Remover',
     saveButton: 'Salvar',
     settingsTitle: 'Ajustes',

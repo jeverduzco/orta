@@ -1,4 +1,8 @@
-import { ORTA_MODEL_ID, type ValidateGatewayResponse } from '../shared/messages';
+import {
+  DEFAULT_MODEL_ID,
+  MODEL_OPTIONS,
+  type ValidateGatewayResponse,
+} from '../shared/messages';
 import {
   getTargetLanguageLabel,
   normalizeTargetLanguage,
@@ -41,10 +45,8 @@ const blockedForm = getElement<HTMLFormElement>('#blocked-form');
 const blockedInput = getElement<HTMLInputElement>('#blocked-site');
 const blockedList = getElement<HTMLUListElement>('#blocked-list');
 const builtinList = getElement<HTMLUListElement>('#builtin-list');
-const modelLabel = getElement<HTMLElement>('#model-id');
+const modelSelect = getElement<HTMLSelectElement>('#model');
 const toast = getElement<HTMLElement>('#toast');
-
-modelLabel.textContent = ORTA_MODEL_ID;
 
 let publicSettings: PublicOrtaSettings | null = null;
 let toastTimeout: number | undefined;
@@ -67,6 +69,16 @@ const renderLanguageOptions = (appLanguage: string): void => {
     option.value = entry.code;
     option.textContent = getTargetLanguageLabel(entry.code, normalizedApp);
     targetLanguageInput.append(option);
+  }
+};
+
+const renderModelOptions = (): void => {
+  modelSelect.innerHTML = '';
+  for (const optionDef of MODEL_OPTIONS) {
+    const option = document.createElement('option');
+    option.value = optionDef.id;
+    option.textContent = optionDef.label;
+    modelSelect.append(option);
   }
 };
 
@@ -120,12 +132,13 @@ const refreshApiStatusFromKey = (apiKey: string): void => {
   }
 };
 
-const sendValidateGatewayKey = (apiKey?: string): Promise<ValidateGatewayResponse> =>
+const sendValidateGatewayKey = (apiKey?: string, model?: string): Promise<ValidateGatewayResponse> =>
   new Promise((resolve) => {
     chrome.runtime.sendMessage(
       {
         type: 'orta:validateGatewayKey',
         apiKey,
+        model,
       },
       (response: ValidateGatewayResponse | undefined) => {
         const copy = getCopy(publicSettings?.appLanguage ?? 'es');
@@ -264,6 +277,7 @@ const renderSettings = (settings: PublicOrtaSettings, apiKey: string): void => {
 
   applyOptionsLanguage(settings.appLanguage);
   targetLanguageInput.value = normalizeTargetLanguage(settings.targetLanguage);
+  modelSelect.value = settings.model ?? DEFAULT_MODEL_ID;
 
   refreshApiStatusFromKey(apiKey);
   renderBlockedSites();
@@ -317,11 +331,12 @@ testKeyButton.addEventListener('click', async () => {
   }
 
   setApiStatus(copy.apiStatusLoading, 'loading');
-  const response = await sendValidateGatewayKey(apiKey);
+  const modelForTest = modelSelect.value || DEFAULT_MODEL_ID;
+  const response = await sendValidateGatewayKey(apiKey, modelForTest);
 
   if (response.ok) {
     setApiStatus(copy.apiStatusReady, 'valid');
-    showToast(`${copy.connectionReady} · ${response.model || ORTA_MODEL_ID}`);
+    showToast(`${copy.connectionReady} · ${response.model || modelForTest}`);
     return;
   }
 
@@ -362,6 +377,14 @@ targetLanguageInput.addEventListener('change', () => {
   showToast(`${copy.targetLanguageSaved}: ${getTargetLanguageLabel(targetLanguage, normalizeAppLanguage(publicSettings?.appLanguage ?? 'es'))}`);
 });
 
+modelSelect.addEventListener('change', () => {
+  const model = modelSelect.value;
+  void updatePublicSetting({ model });
+  const copy = getCopy(publicSettings?.appLanguage ?? 'es');
+  const selected = MODEL_OPTIONS.find((m) => m.id === model)?.label ?? model;
+  showToast(`${copy.modelSaved}: ${selected}`);
+});
+
 blockedForm.addEventListener('submit', async (event) => {
   event.preventDefault();
 
@@ -391,5 +414,6 @@ blockedForm.addEventListener('submit', async (event) => {
 });
 
 void Promise.all([getPublicSettings(), getSecretSettings()]).then(([settings, secrets]) => {
+  renderModelOptions();
   renderSettings(settings, secrets.apiKey);
 });

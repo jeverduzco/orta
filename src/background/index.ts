@@ -1,7 +1,7 @@
 import {
   AI_GATEWAY_BASE_URL,
   CONTENT_SCRIPT_COMMAND_TYPE,
-  ORTA_MODEL_ID,
+  DEFAULT_MODEL_ID,
   type ContentScriptCommand,
   type OrtaAction,
   type OrtaMessage,
@@ -115,12 +115,14 @@ const requestGatewayText = async ({
   text,
   targetLanguage,
   appLanguage,
+  model,
 }: {
   apiKey: string;
   action: OrtaAction;
   text: string;
   targetLanguage: string;
   appLanguage: string;
+  model?: string;
 }): Promise<{
   text: string;
   usage?: {
@@ -130,8 +132,9 @@ const requestGatewayText = async ({
   };
 }> => {
   const copy = getCopy(appLanguage);
+  const effectiveModel = model || DEFAULT_MODEL_ID;
   const body = JSON.stringify({
-    model: ORTA_MODEL_ID,
+    model: effectiveModel,
     messages: buildMessages(action, text, targetLanguage),
     temperature: action === 'correct' ? 0 : 0.1,
   });
@@ -188,9 +191,10 @@ const requestGatewayText = async ({
   };
 };
 
-const validateGatewayKey = async (apiKey: string): Promise<boolean> => {
+const validateGatewayKey = async (apiKey: string, modelId?: string): Promise<boolean> => {
+  const model = modelId || DEFAULT_MODEL_ID;
   const response = await fetchWithTimeout(
-    `${AI_GATEWAY_BASE_URL}/models/${encodeURIComponent(ORTA_MODEL_ID)}`,
+    `${AI_GATEWAY_BASE_URL}/models/${encodeURIComponent(model)}`,
     {
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -219,6 +223,7 @@ chrome.runtime.onMessage.addListener((message: OrtaMessage, sender, sendResponse
       const settings = await getSettings();
       const copy = getCopy(settings.appLanguage);
       const apiKey = message.apiKey?.trim() || settings.apiKey.trim();
+      const modelToValidate = message.model || settings.model || DEFAULT_MODEL_ID;
 
       if (!apiKey) {
         sendResponse({ ok: false, error: copy.keyRequired });
@@ -226,10 +231,10 @@ chrome.runtime.onMessage.addListener((message: OrtaMessage, sender, sendResponse
       }
 
       try {
-        const isValid = await validateGatewayKey(apiKey);
+        const isValid = await validateGatewayKey(apiKey, modelToValidate);
         sendResponse(
           isValid
-            ? { ok: true, model: ORTA_MODEL_ID }
+            ? { ok: true, model: modelToValidate }
             : { ok: false, error: copy.gatewayInvalid },
         );
       } catch (error) {
@@ -288,6 +293,7 @@ chrome.runtime.onMessage.addListener((message: OrtaMessage, sender, sendResponse
           text: message.text,
           targetLanguage: message.targetLanguage || settings.targetLanguage,
           appLanguage: settings.appLanguage,
+          model: settings.model,
         });
 
         sendResponse({ ok: true, ...result });

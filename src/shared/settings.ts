@@ -1,5 +1,6 @@
 import { DEFAULT_TARGET_LANGUAGE } from './languages';
 import { DEFAULT_APP_LANGUAGE } from './appLanguage';
+import { DEFAULT_MODEL_ID } from './messages';
 
 export type PublicOrtaSettings = {
   enabled: boolean;
@@ -8,6 +9,7 @@ export type PublicOrtaSettings = {
   targetLanguage: string;
   appLanguage: string;
   disabledSites: string[];
+  model: string;
 };
 
 export type SecretOrtaSettings = {
@@ -26,6 +28,7 @@ export const publicDefaults: PublicOrtaSettings = {
   targetLanguage: DEFAULT_TARGET_LANGUAGE,
   appLanguage: DEFAULT_APP_LANGUAGE,
   disabledSites: [],
+  model: DEFAULT_MODEL_ID,
 };
 
 export const secretDefaults: SecretOrtaSettings = {
@@ -38,6 +41,7 @@ const syncDefaults: SyncSettings = {
   translationEnabled: publicDefaults.translationEnabled,
   targetLanguage: publicDefaults.targetLanguage,
   appLanguage: publicDefaults.appLanguage,
+  model: publicDefaults.model,
 };
 
 const localDefaults: LocalSettings = {
