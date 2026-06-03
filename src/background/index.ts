@@ -64,15 +64,20 @@ const cleanModelOutput = (value: string): string => {
   return fencedMatch?.[1]?.trim() ?? trimmedValue;
 };
 
-const buildMessages = (action: OrtaAction, text: string, targetLanguage: string): GatewayMessage[] => {
+const buildMessages = (action: OrtaAction, text: string, targetLanguage: string, sourceLanguage?: string): GatewayMessage[] => {
   const baseInstruction =
     "You are Orta, a writing assistant that operates on the user's selected text. Return ONLY the final text, with no quotes, no markdown, and no explanations. Preserve line breaks, URLs, placeholders, mentions, numbers, code, and the original meaning. Do not change the language unless the instruction below tells you to translate.";
 
   if (action === 'correct') {
+    let langHint = '';
+    if (sourceLanguage) {
+      const langName = getTargetLanguageNativeName(normalizeTargetLanguage(sourceLanguage));
+      langHint = `The text is written in ${langName}. `;
+    }
     return [
       {
         role: 'system',
-        content: `${baseInstruction} Fix spelling, accents, punctuation, light grammar issues and obvious typos (duplicated or missing letters). Do not change the language, tone or intent. If the text is already correct, return it exactly as received.`,
+        content: `${langHint}${baseInstruction} Fix spelling, accents, punctuation, light grammar issues and obvious typos (duplicated or missing letters). Do not change the language, tone or intent. If the text is already correct, return it exactly as received.`,
       },
       {
         role: 'user',
@@ -114,6 +119,7 @@ const requestGatewayText = async ({
   action,
   text,
   targetLanguage,
+  sourceLanguage,
   appLanguage,
   model,
 }: {
@@ -121,6 +127,7 @@ const requestGatewayText = async ({
   action: OrtaAction;
   text: string;
   targetLanguage: string;
+  sourceLanguage?: string;
   appLanguage: string;
   model?: string;
 }): Promise<{
@@ -135,7 +142,7 @@ const requestGatewayText = async ({
   const effectiveModel = model || DEFAULT_MODEL_ID;
   const body = JSON.stringify({
     model: effectiveModel,
-    messages: buildMessages(action, text, targetLanguage),
+    messages: buildMessages(action, text, targetLanguage, sourceLanguage),
     temperature: action === 'correct' ? 0 : 0.1,
   });
 
@@ -292,6 +299,7 @@ chrome.runtime.onMessage.addListener((message: OrtaMessage, sender, sendResponse
           action: message.action,
           text: message.text,
           targetLanguage: message.targetLanguage || settings.targetLanguage,
+          sourceLanguage: message.sourceLanguage,
           appLanguage: settings.appLanguage,
           model: settings.model,
         });

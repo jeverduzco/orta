@@ -22,6 +22,7 @@ export type TransformRequest = {
   type: 'orta:transform';
   action: OrtaAction;
   text: string;
+  sourceLanguage?: string;
   targetLanguage?: string;
 };
 

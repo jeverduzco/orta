@@ -5,8 +5,11 @@ import {
   type PublicOrtaSettings,
 } from '../shared/settings';
 import {
+  DEFAULT_TARGET_LANGUAGE,
   getTargetLanguageLabel,
   normalizeTargetLanguage,
+  TARGET_LANGUAGE_REGISTRY,
+  type TargetLanguageCode,
 } from '../shared/languages';
 import { normalizeAppLanguage } from '../shared/appLanguage';
 import { isOrtaAvailableForUrl } from '../shared/sites';
@@ -47,6 +50,10 @@ let teardownDone = false;
 let hideTimeout = 0;
 let copiedTimeout = 0;
 const teardownController = new AbortController();
+
+let bubbleCorrectionLanguage: TargetLanguageCode = DEFAULT_TARGET_LANGUAGE;
+let bubbleTranslationLanguage: TargetLanguageCode = DEFAULT_TARGET_LANGUAGE;
+let activeLangAction: 'correct' | 'translate' | null = null;
 
 const ortaDebug = (...args: unknown[]): void => {
   try {
@@ -220,6 +227,78 @@ shadowRoot.innerHTML = `
     }
 
     .bubble button svg { width: 13px; height: 13px; }
+
+    .bubble .lang-chip {
+      align-items: center;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      color: rgba(220, 222, 232, 0.75);
+      cursor: pointer;
+      display: inline-flex;
+      font: 600 9px/1 ui-monospace, ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: 0.02em;
+      margin-left: 4px;
+      padding: 1px 5px;
+      transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+      user-select: none;
+    }
+
+    .bubble button:hover .lang-chip,
+    .bubble button:focus-visible .lang-chip {
+      background: rgba(167, 139, 250, 0.2);
+      border-color: rgba(167, 139, 250, 0.3);
+      color: #c4b5fd;
+    }
+
+    .bubble .lang-chip:hover {
+      background: rgba(167, 139, 250, 0.25);
+      border-color: rgba(167, 139, 250, 0.4);
+      color: #ddd6fe;
+    }
+
+    /* Compact language picker (appears on demand under the bubble; keeps UI non-intrusive) */
+    .lang-picker {
+      position: absolute;
+      background: linear-gradient(180deg, rgba(24, 26, 34, 0.98), rgba(18, 20, 28, 0.98));
+      backdrop-filter: blur(12px) saturate(130%);
+      -webkit-backdrop-filter: blur(12px) saturate(130%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      padding: 5px;
+      z-index: 10;
+      min-width: 120px;
+      max-width: 240px;
+    }
+
+    .lang-picker button {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      color: #e0e2ed;
+      cursor: pointer;
+      font: 600 9.5px/1 ui-monospace, ui-sans-serif, system-ui, sans-serif;
+      padding: 2px 6px;
+      min-width: 26px;
+      text-align: center;
+      letter-spacing: 0.01em;
+    }
+
+    .lang-picker button:hover {
+      background: rgba(167, 139, 250, 0.2);
+      border-color: rgba(167, 139, 250, 0.35);
+      color: #c4b5fd;
+    }
+
+    .lang-picker button[aria-selected="true"] {
+      background: rgba(167, 139, 250, 0.35);
+      border-color: rgba(167, 139, 250, 0.6);
+      color: #fff;
+    }
 
     /* Result panel */
     .result {
@@ -457,6 +536,49 @@ shadowRoot.innerHTML = `
         border-color: rgba(22, 101, 52, 0.35);
         color: #166534;
       }
+
+      .bubble .lang-chip {
+        background: rgba(0, 0, 0, 0.06);
+        border-color: rgba(0, 0, 0, 0.1);
+        color: #4b5563;
+      }
+
+      .bubble button:hover .lang-chip,
+      .bubble button:focus-visible .lang-chip {
+        background: rgba(124, 58, 237, 0.12);
+        border-color: rgba(124, 58, 237, 0.25);
+        color: #5b21b6;
+      }
+
+      .bubble .lang-chip:hover {
+        background: rgba(124, 58, 237, 0.16);
+        border-color: rgba(124, 58, 237, 0.3);
+        color: #4c1d95;
+      }
+
+      .lang-picker {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(249, 250, 252, 0.98));
+        border-color: rgba(0, 0, 0, 0.1);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      }
+
+      .lang-picker button {
+        background: rgba(0, 0, 0, 0.04);
+        border-color: rgba(0, 0, 0, 0.08);
+        color: #374151;
+      }
+
+      .lang-picker button:hover {
+        background: rgba(124, 58, 237, 0.12);
+        border-color: rgba(124, 58, 237, 0.3);
+        color: #5b21b6;
+      }
+
+      .lang-picker button[aria-selected="true"] {
+        background: rgba(124, 58, 237, 0.2);
+        border-color: rgba(124, 58, 237, 0.45);
+        color: #4c1d95;
+      }
     }
   </style>
   <div class="panel" id="panel">
@@ -464,12 +586,15 @@ shadowRoot.innerHTML = `
       <button class="bubble-action" data-action="correct" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="m15 6 3 3"/></svg>
         <span data-label="correct"></span>
+        <span class="lang-chip" data-for="correct" aria-hidden="true"></span>
       </button>
       <button class="bubble-action" data-action="translate" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m14 22 5-10 5 10"/><path d="M15.5 18h7"/></svg>
         <span data-label="translate"></span>
+        <span class="lang-chip" data-for="translate" aria-hidden="true"></span>
       </button>
     </div>
+    <div class="lang-picker" id="lang-picker" role="listbox" style="display:none;"></div>
     <div class="loading" id="loading" style="display:none;">
       <span class="spinner" aria-hidden="true"></span>
       <span class="loading-label" id="loading-label"></span>
@@ -549,6 +674,10 @@ const correctLabel = shadowRoot.querySelector<HTMLSpanElement>('[data-label="cor
 const translateLabel = shadowRoot.querySelector<HTMLSpanElement>('[data-label="translate"]');
 const noChangesBadge = shadowRoot.querySelector<HTMLSpanElement>('#no-changes-badge');
 
+const correctLangChip = shadowRoot.querySelector<HTMLSpanElement>('[data-for="correct"]');
+const translateLangChip = shadowRoot.querySelector<HTMLSpanElement>('[data-for="translate"]');
+const langPicker = shadowRoot.querySelector<HTMLDivElement>('#lang-picker');
+
 // ===== Selection reading =====
 
 const isTextInput = (element: Element | null): element is HTMLInputElement | HTMLTextAreaElement => {
@@ -604,10 +733,14 @@ const cancelHideTimeout = (): void => {
 
 const setMode = (next: PanelMode): void => {
   panelMode = next;
-  if (bubble) bubble.style.display = next === 'bubble' ? '' : 'none';
+  const isBubble = next === 'bubble';
+  if (bubble) bubble.style.display = isBubble ? '' : 'none';
   if (loading) loading.style.display = next === 'loading' ? '' : 'none';
   if (resultBox) resultBox.style.display = next === 'result' ? '' : 'none';
   if (errorBox) errorBox.style.display = next === 'error' ? '' : 'none';
+  if (!isBubble) {
+    hideLangPicker();
+  }
 };
 
 const hidePanel = (): void => {
@@ -615,6 +748,7 @@ const hidePanel = (): void => {
   if (!panel) return;
   panel.setAttribute('data-visible', 'false');
   currentSnapshot = null;
+  hideLangPicker();
   setMode('bubble');
 };
 
@@ -643,19 +777,99 @@ const positionPanel = (rect: DOMRect): void => {
 
 const renderLabels = (): void => {
   const copy = getContentCopy();
-  const appLang = normalizeAppLanguage(settings.appLanguage);
-  const targetLangCode = normalizeTargetLanguage(settings.targetLanguage);
-  const targetLabel = getTargetLanguageLabel(targetLangCode, appLang);
 
   if (correctLabel) correctLabel.textContent = copy.correctAction;
-  if (translateLabel) translateLabel.textContent = `${copy.translateAction} · ${targetLabel}`;
+  if (translateLabel) translateLabel.textContent = copy.translateAction;
   if (copyLabel) copyLabel.textContent = copy.copyAction;
 
   if (correctBtn) correctBtn.style.display = settings.correctionEnabled ? '' : 'none';
   if (translateBtn) translateBtn.style.display = settings.translationEnabled ? '' : 'none';
 };
 
-const showBubble = (snapshot: SelectionSnapshot): void => {
+const renderBubbleLanguages = (): void => {
+  const copy = getContentCopy();
+  const appLang = normalizeAppLanguage(settings.appLanguage);
+
+  if (correctLangChip) {
+    const short = bubbleCorrectionLanguage.toUpperCase().replace(/-HANS/i, '');
+    correctLangChip.textContent = short;
+    const fullLabel = getTargetLanguageLabel(bubbleCorrectionLanguage, appLang);
+    const title = `${copy.correctionLanguageLabel}: ${fullLabel}`;
+    correctLangChip.title = title;
+    correctLangChip.setAttribute('aria-label', title);
+  }
+
+  if (translateLangChip) {
+    const short = bubbleTranslationLanguage.toUpperCase().replace(/-HANS/i, '');
+    translateLangChip.textContent = short;
+    const fullLabel = getTargetLanguageLabel(bubbleTranslationLanguage, appLang);
+    const title = `${copy.translationLanguageLabel}: ${fullLabel}`;
+    translateLangChip.title = title;
+    translateLangChip.setAttribute('aria-label', title);
+  }
+};
+
+const renderLangPicker = (current: TargetLanguageCode): void => {
+  if (!langPicker) return;
+  langPicker.innerHTML = '';
+
+  const appLang = normalizeAppLanguage(settings.appLanguage);
+
+  TARGET_LANGUAGE_REGISTRY.forEach((entry) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    const displayCode = entry.code.toUpperCase().replace('-HANS', '');
+    btn.textContent = displayCode;
+    btn.title = getTargetLanguageLabel(entry.code, appLang);
+    btn.dataset.code = entry.code;
+    if (entry.code === current) {
+      btn.setAttribute('aria-selected', 'true');
+    }
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (activeLangAction === 'correct') {
+        bubbleCorrectionLanguage = entry.code;
+      } else if (activeLangAction === 'translate') {
+        bubbleTranslationLanguage = entry.code;
+      }
+      renderBubbleLanguages();
+      hideLangPicker();
+    });
+    langPicker.appendChild(btn);
+  });
+};
+
+const hideLangPicker = (): void => {
+  if (langPicker) {
+    langPicker.style.display = 'none';
+  }
+  activeLangAction = null;
+};
+
+const showLangPicker = (forAction: 'correct' | 'translate', anchorEl: HTMLElement): void => {
+  if (!langPicker || !panel || !bubble) return;
+  activeLangAction = forAction;
+  const current = forAction === 'correct' ? bubbleCorrectionLanguage : bubbleTranslationLanguage;
+  renderLangPicker(current);
+  langPicker.style.display = 'flex';
+
+  requestAnimationFrame(() => {
+    if (!langPicker || !panel) return;
+    const panelRect = panel.getBoundingClientRect();
+    const anchorRect = anchorEl.getBoundingClientRect();
+    const pickerW = langPicker.offsetWidth || 160;
+    let left = anchorRect.left - panelRect.left + anchorRect.width / 2 - pickerW / 2;
+    const panelW = panel.offsetWidth || 300;
+    left = Math.max(4, Math.min(left, panelW - pickerW - 4));
+    langPicker.style.left = `${Math.round(left)}px`;
+    langPicker.style.top = `${bubble.offsetHeight + 4}px`;
+  });
+};
+
+const showBubble = (
+  snapshot: SelectionSnapshot,
+  { preserveLanguages = false }: { preserveLanguages?: boolean } = {}
+): void => {
   if (!isOrtaAvailable()) {
     ortaDebug('bubble suppressed (orta not available on page)');
     hidePanel();
@@ -669,7 +883,17 @@ const showBubble = (snapshot: SelectionSnapshot): void => {
 
   cancelHideTimeout();
   currentSnapshot = snapshot;
+
+  if (!preserveLanguages) {
+    // Reset per-selection language choices to global default (user can override via chips in bubble).
+    // We only do this for new selections from the page; internal UI clicks (lang picker)
+    // will pass preserveLanguages=true to avoid clobbering the user's choice.
+    bubbleCorrectionLanguage = normalizeTargetLanguage(settings.targetLanguage);
+    bubbleTranslationLanguage = normalizeTargetLanguage(settings.targetLanguage);
+  }
+
   renderLabels();
+  renderBubbleLanguages();
   setMode('bubble');
   positionPanel(snapshot.rect);
   ensureRootHostIsLast();
@@ -713,7 +937,11 @@ const showError = (message: string, rect: DOMRect): void => {
 
 // ===== Transform request =====
 
-const sendTransformRequest = (action: OrtaAction, text: string): Promise<TransformResponse> =>
+const sendTransformRequest = (
+  action: OrtaAction,
+  text: string,
+  overrides: { sourceLanguage?: TargetLanguageCode; targetLanguage?: TargetLanguageCode } = {}
+): Promise<TransformResponse> =>
   new Promise((resolve) => {
     try {
       chrome.runtime.sendMessage(
@@ -721,7 +949,8 @@ const sendTransformRequest = (action: OrtaAction, text: string): Promise<Transfo
           type: 'orta:transform',
           action,
           text,
-          targetLanguage: settings.targetLanguage,
+          sourceLanguage: overrides.sourceLanguage,
+          targetLanguage: overrides.targetLanguage,
         },
         (response: TransformResponse | undefined) => {
           const lastError = chrome.runtime.lastError;
@@ -755,7 +984,11 @@ const runAction = async (action: OrtaAction): Promise<void> => {
   isProcessing = true;
   showLoading(action === 'correct' ? copy.correctAction : copy.translateAction, snapshot.rect);
 
-  const response = await sendTransformRequest(action, snapshot.text);
+  const overrides =
+    action === 'correct'
+      ? { sourceLanguage: bubbleCorrectionLanguage }
+      : { targetLanguage: bubbleTranslationLanguage };
+  const response = await sendTransformRequest(action, snapshot.text, overrides);
   isProcessing = false;
 
   if (!isCurrentInstance()) return;
@@ -831,7 +1064,14 @@ const handleSelectionChange = (() => {
         return;
       }
       cancelHideTimeout();
-      showBubble(snapshot);
+
+      // If this is a re-evaluation for the exact same selected text (e.g. caused by
+      // clicking our own language picker/chips inside the shadow DOM), preserve any
+      // per-selection language overrides the user just chose. Only reset to global
+      // when it's a genuinely new/different selection from the page.
+      const isSameSelection =
+        !!currentSnapshot && currentSnapshot.text.trim() === snapshot.text.trim();
+      showBubble(snapshot, { preserveLanguages: isSameSelection && panelMode === 'bubble' });
     }, SELECTION_DEBOUNCE_MS);
   };
 })();
@@ -867,9 +1107,23 @@ if (!SKIP_FRAME) {
   const pollHandle = window.setInterval(pollSelection, 250);
   teardownController.signal.addEventListener('abort', () => window.clearInterval(pollHandle));
 
+  const isClickInsideOrtaUI = (event: Event): boolean => {
+    try {
+      const path = (event as any).composedPath?.() ?? [];
+      return path.includes(rootHost);
+    } catch {
+      return false;
+    }
+  };
+
   document.addEventListener(
     'mouseup',
-    () => {
+    (event) => {
+      if (isClickInsideOrtaUI(event)) {
+        // Click inside our shadow UI (e.g. language chip or picker) — do not re-evaluate
+        // the page selection or reset per-bubble language choices.
+        return;
+      }
       handleSelectionChange();
     },
     { capture: true, signal: teardownController.signal },
@@ -879,7 +1133,12 @@ if (!SKIP_FRAME) {
   // dispatch pointer events and synthesize mouse later, or block one or the other.
   document.addEventListener(
     'pointerup',
-    () => {
+    (event) => {
+      if (isClickInsideOrtaUI(event)) {
+        // Click inside our shadow UI (e.g. language chip or picker) — do not re-evaluate
+        // the page selection or reset per-bubble language choices.
+        return;
+      }
       handleSelectionChange();
     },
     { capture: true, signal: teardownController.signal },
@@ -971,16 +1230,61 @@ if (!SKIP_FRAME) {
 correctBtn?.addEventListener('click', (event) => {
   event.preventDefault();
   event.stopPropagation();
+  const wasPickerOpen = !!(langPicker && langPicker.style.display !== 'none');
+  hideLangPicker();
+  if (wasPickerOpen) {
+    // Picker was visible: treat button click as dismiss only (non-intrusive)
+    return;
+  }
   void runAction('correct');
 });
 translateBtn?.addEventListener('click', (event) => {
   event.preventDefault();
   event.stopPropagation();
+  const wasPickerOpen = !!(langPicker && langPicker.style.display !== 'none');
+  hideLangPicker();
+  if (wasPickerOpen) {
+    // Picker was visible: treat button click as dismiss only (non-intrusive)
+    return;
+  }
   void runAction('translate');
 });
 [correctBtn, translateBtn].forEach((btn) =>
   btn?.addEventListener('pointerdown', (event) => event.preventDefault()),
 );
+
+// Per-action language chips (click to open compact picker for this selection only)
+correctLangChip?.addEventListener('click', (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  if (!correctLangChip) return;
+  if (activeLangAction === 'correct' && langPicker && langPicker.style.display !== 'none') {
+    hideLangPicker();
+  } else {
+    showLangPicker('correct', correctLangChip);
+  }
+});
+translateLangChip?.addEventListener('click', (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  if (!translateLangChip) return;
+  if (activeLangAction === 'translate' && langPicker && langPicker.style.display !== 'none') {
+    hideLangPicker();
+  } else {
+    showLangPicker('translate', translateLangChip);
+  }
+});
+
+// Dismiss open language picker on clicks elsewhere in the panel (keeps it non-intrusive)
+panel?.addEventListener('click', (event) => {
+  if (!langPicker || langPicker.style.display === 'none') return;
+  const target = event.target as Node | null;
+  if (target && !langPicker.contains(target)) {
+    hideLangPicker();
+  }
+});
 
 resultCopy?.addEventListener('click', (event) => {
   event.preventDefault();
@@ -1005,6 +1309,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
       appLanguage: changes.appLanguage?.newValue ?? settings.appLanguage,
     };
     renderLabels();
+    renderBubbleLanguages();
     if (!isOrtaAvailable()) hidePanel();
     return;
   }
@@ -1038,7 +1343,10 @@ void getPublicSettings()
   .then((stored) => {
     if (!isCurrentInstance()) return;
     settings = stored;
+    bubbleCorrectionLanguage = normalizeTargetLanguage(settings.targetLanguage);
+    bubbleTranslationLanguage = normalizeTargetLanguage(settings.targetLanguage);
     renderLabels();
+    renderBubbleLanguages();
     ortaDebug('content script ready', {
       href: window.location.href,
       topFrame: window.top === window,

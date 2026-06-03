@@ -9,6 +9,8 @@ type CopyDictionary = {
   correctAction: string;
   correctDescription: string;
   translateAction: string;
+  correctionLanguageLabel: string;
+  translationLanguageLabel: string;
   noChanges: string;
   noText: string;
   selectToPreserveEntities: string;
@@ -113,6 +115,8 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     correctAction: 'Corregir',
     correctDescription: 'Ortografía y puntuación',
     translateAction: 'Traducir',
+    correctionLanguageLabel: 'Idioma de corrección',
+    translationLanguageLabel: 'Idioma de traducción',
     noChanges: 'Sin cambios sugeridos.',
     noText: 'No hay texto para procesar.',
     selectToPreserveEntities: 'Selecciona el texto a corregir para conservar menciones, hashtags y enlaces.',
@@ -206,6 +210,8 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     correctAction: 'Correct',
     correctDescription: 'Spelling and punctuation',
     translateAction: 'Translate',
+    correctionLanguageLabel: 'Correction language',
+    translationLanguageLabel: 'Translation language',
     noChanges: 'No suggested changes.',
     noText: 'There is no text to process.',
     selectToPreserveEntities: 'Select the text to correct to preserve mentions, hashtags, and links.',
@@ -299,6 +305,8 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     correctAction: 'Corrigir',
     correctDescription: 'Ortografia e pontuação',
     translateAction: 'Traduzir',
+    correctionLanguageLabel: 'Idioma de correção',
+    translationLanguageLabel: 'Idioma de tradução',
     noChanges: 'Sem alterações sugeridas.',
     noText: 'Não há texto para processar.',
     selectToPreserveEntities: 'Selecione o texto para corrigir e preservar menções, hashtags e links.',
