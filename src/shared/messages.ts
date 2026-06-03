@@ -4,7 +4,7 @@ export const DEFAULT_MODEL_ID = 'google/gemini-3.5-flash';
 
 export const MODEL_OPTIONS = [
   { id: 'google/gemini-3.5-flash', label: 'Flash (Gemini 3.5)' },
-  { id: 'minimax/minimax-m2.7', label: 'Minimax M2.7' },
+  { id: 'minimax/minimax-m3', label: 'Minimax M3' },
   { id: 'xai/grok-4.3', label: 'Grok 4.3 (xAI)' },
   { id: 'deepseek/deepseek-v4-flash', label: 'DeepSeek V4 Flash' },
 ] as const;

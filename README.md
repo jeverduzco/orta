@@ -63,7 +63,7 @@ Supported models (selectable in Options → Connection → AI model):
 | Model ID                        | Label                  | Notes     |
 |---------------------------------|------------------------|-----------|
 | `google/gemini-3.5-flash`       | Flash (Gemini 3.5)     | Default   |
-| `minimax/minimax-m2.7`          | Minimax M2.7           |           |
+| `minimax/minimax-m3`          | Minimax M3           |           |
 | `xai/grok-4.3`                  | Grok 4.3 (xAI)         |           |
 | `deepseek/deepseek-v4-flash`    | DeepSeek V4 Flash      |           |
 
