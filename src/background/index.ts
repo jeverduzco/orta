@@ -299,7 +299,7 @@ chrome.runtime.onMessage.addListener((message: OrtaMessage, sender, sendResponse
           action: message.action,
           text: message.text,
           targetLanguage: message.targetLanguage || settings.targetLanguage,
-          sourceLanguage: message.sourceLanguage,
+          sourceLanguage: message.sourceLanguage || settings.correctionLanguage,
           appLanguage: settings.appLanguage,
           model: settings.model,
         });

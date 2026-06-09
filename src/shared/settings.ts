@@ -6,7 +6,10 @@ export type PublicOrtaSettings = {
   enabled: boolean;
   correctionEnabled: boolean;
   translationEnabled: boolean;
+  /** Target language for translation. */
   targetLanguage: string;
+  /** Language hint used when correcting (the language the text is written in). */
+  correctionLanguage: string;
   appLanguage: string;
   disabledSites: string[];
   model: string;
@@ -26,6 +29,7 @@ export const publicDefaults: PublicOrtaSettings = {
   correctionEnabled: true,
   translationEnabled: true,
   targetLanguage: DEFAULT_TARGET_LANGUAGE,
+  correctionLanguage: DEFAULT_TARGET_LANGUAGE,
   appLanguage: DEFAULT_APP_LANGUAGE,
   disabledSites: [],
   model: DEFAULT_MODEL_ID,
@@ -40,6 +44,7 @@ const syncDefaults: SyncSettings = {
   correctionEnabled: publicDefaults.correctionEnabled,
   translationEnabled: publicDefaults.translationEnabled,
   targetLanguage: publicDefaults.targetLanguage,
+  correctionLanguage: publicDefaults.correctionLanguage,
   appLanguage: publicDefaults.appLanguage,
   model: publicDefaults.model,
 };

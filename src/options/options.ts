@@ -41,6 +41,7 @@ const correctionInput = getElement<HTMLInputElement>('#correction-enabled');
 const translationInput = getElement<HTMLInputElement>('#translation-enabled');
 const appLanguageInput = getElement<HTMLSelectElement>('#app-language');
 const targetLanguageInput = getElement<HTMLSelectElement>('#target-language');
+const correctionLanguageInput = getElement<HTMLSelectElement>('#correction-language');
 const blockedForm = getElement<HTMLFormElement>('#blocked-form');
 const blockedInput = getElement<HTMLInputElement>('#blocked-site');
 const blockedList = getElement<HTMLUListElement>('#blocked-list');
@@ -55,6 +56,7 @@ const renderLanguageOptions = (appLanguage: string): void => {
   const normalizedApp = normalizeAppLanguage(appLanguage);
 
   targetLanguageInput.innerHTML = '';
+  correctionLanguageInput.innerHTML = '';
   appLanguageInput.innerHTML = '';
 
   for (const language of APP_LANGUAGES) {
@@ -65,10 +67,13 @@ const renderLanguageOptions = (appLanguage: string): void => {
   }
 
   for (const entry of TARGET_LANGUAGE_REGISTRY) {
-    const option = document.createElement('option');
-    option.value = entry.code;
-    option.textContent = getTargetLanguageLabel(entry.code, normalizedApp);
-    targetLanguageInput.append(option);
+    const label = getTargetLanguageLabel(entry.code, normalizedApp);
+    for (const select of [targetLanguageInput, correctionLanguageInput]) {
+      const option = document.createElement('option');
+      option.value = entry.code;
+      option.textContent = label;
+      select.append(option);
+    }
   }
 };
 
@@ -104,8 +109,10 @@ const applyOptionsLanguage = (language: string): void => {
   appLanguageInput.value = appLanguage;
   if (publicSettings) {
     targetLanguageInput.value = normalizeTargetLanguage(publicSettings.targetLanguage);
+    correctionLanguageInput.value = normalizeTargetLanguage(publicSettings.correctionLanguage);
   }
-  targetLanguageInput.setAttribute('aria-label', copy.targetLanguageLabel);
+  targetLanguageInput.setAttribute('aria-label', copy.translationLanguageLabel);
+  correctionLanguageInput.setAttribute('aria-label', copy.correctionLanguageLabel);
   appLanguageInput.setAttribute('aria-label', copy.appLanguageLabel);
 };
 
@@ -277,6 +284,7 @@ const renderSettings = (settings: PublicOrtaSettings, apiKey: string): void => {
 
   applyOptionsLanguage(settings.appLanguage);
   targetLanguageInput.value = normalizeTargetLanguage(settings.targetLanguage);
+  correctionLanguageInput.value = normalizeTargetLanguage(settings.correctionLanguage);
   modelSelect.value = settings.model ?? DEFAULT_MODEL_ID;
 
   refreshApiStatusFromKey(apiKey);
@@ -372,9 +380,19 @@ appLanguageInput.addEventListener('change', () => {
 targetLanguageInput.addEventListener('change', () => {
   const targetLanguage = normalizeTargetLanguage(targetLanguageInput.value);
   targetLanguageInput.value = targetLanguage;
-  const copy = getCopy(publicSettings?.appLanguage ?? 'es');
+  const appLanguage = normalizeAppLanguage(publicSettings?.appLanguage ?? 'es');
+  const copy = getCopy(appLanguage);
   void updatePublicSetting({ targetLanguage });
-  showToast(`${copy.targetLanguageSaved}: ${getTargetLanguageLabel(targetLanguage, normalizeAppLanguage(publicSettings?.appLanguage ?? 'es'))}`);
+  showToast(`${copy.translationLanguageLabel}: ${getTargetLanguageLabel(targetLanguage, appLanguage)}`);
+});
+
+correctionLanguageInput.addEventListener('change', () => {
+  const correctionLanguage = normalizeTargetLanguage(correctionLanguageInput.value);
+  correctionLanguageInput.value = correctionLanguage;
+  const appLanguage = normalizeAppLanguage(publicSettings?.appLanguage ?? 'es');
+  const copy = getCopy(appLanguage);
+  void updatePublicSetting({ correctionLanguage });
+  showToast(`${copy.correctionLanguageLabel}: ${getTargetLanguageLabel(correctionLanguage, appLanguage)}`);
 });
 
 modelSelect.addEventListener('change', () => {

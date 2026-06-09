@@ -2,6 +2,7 @@ import { getCopy } from '../shared/i18n';
 import {
   getPublicSettings,
   publicDefaults,
+  setPublicSettings,
   type PublicOrtaSettings,
 } from '../shared/settings';
 import {
@@ -809,6 +810,20 @@ const renderBubbleLanguages = (): void => {
   }
 };
 
+const persistLanguageChoice = (
+  action: 'correct' | 'translate',
+  code: TargetLanguageCode,
+): Promise<void> => {
+  // Update the in-memory copy synchronously so a selection that happens before
+  // the storage round-trip already reflects the new default.
+  const patch =
+    action === 'correct' ? { correctionLanguage: code } : { targetLanguage: code };
+  settings = { ...settings, ...patch };
+  return setPublicSettings(patch).catch((error) => {
+    ortaDebug('failed to persist language choice', error);
+  });
+};
+
 const renderLangPicker = (current: TargetLanguageCode): void => {
   if (!langPicker) return;
   langPicker.innerHTML = '';
@@ -825,15 +840,23 @@ const renderLangPicker = (current: TargetLanguageCode): void => {
     if (entry.code === current) {
       btn.setAttribute('aria-selected', 'true');
     }
+    // Prevent focus moving into the picker, which collapses the page selection
+    // on some sites and would dismiss the bubble before the click registers.
+    btn.addEventListener('pointerdown', (e) => e.preventDefault());
     btn.addEventListener('click', (e) => {
+      e.preventDefault();
       e.stopPropagation();
-      if (activeLangAction === 'correct') {
+      e.stopImmediatePropagation();
+      const action = activeLangAction;
+      if (action === 'correct') {
         bubbleCorrectionLanguage = entry.code;
-      } else if (activeLangAction === 'translate') {
+      } else if (action === 'translate') {
         bubbleTranslationLanguage = entry.code;
       }
       renderBubbleLanguages();
       hideLangPicker();
+      // Persist the choice so it survives the next selection and page reloads.
+      if (action) void persistLanguageChoice(action, entry.code);
     });
     langPicker.appendChild(btn);
   });
@@ -885,10 +908,11 @@ const showBubble = (
   currentSnapshot = snapshot;
 
   if (!preserveLanguages) {
-    // Reset per-selection language choices to global default (user can override via chips in bubble).
-    // We only do this for new selections from the page; internal UI clicks (lang picker)
-    // will pass preserveLanguages=true to avoid clobbering the user's choice.
-    bubbleCorrectionLanguage = normalizeTargetLanguage(settings.targetLanguage);
+    // Seed each action with its own persisted language. Picker choices are written
+    // back to settings, so new selections keep the language the user last chose.
+    // Internal UI clicks (lang picker) pass preserveLanguages=true to avoid the
+    // brief window where storage hasn't propagated yet.
+    bubbleCorrectionLanguage = normalizeTargetLanguage(settings.correctionLanguage);
     bubbleTranslationLanguage = normalizeTargetLanguage(settings.targetLanguage);
   }
 
@@ -1054,6 +1078,9 @@ const handleSelectionChange = (() => {
 
       const snapshot = readActiveSelection();
       if (!snapshot) {
+        // While the language picker is open, keep the bubble even if the site
+        // collapsed the page selection when focus entered our shadow UI.
+        if (activeLangAction) return;
         // Selection cleared; hide bubble with a small delay so quick re-selections feel smooth.
         if (!hideTimeout) {
           hideTimeout = window.setTimeout(() => {
@@ -1249,8 +1276,8 @@ translateBtn?.addEventListener('click', (event) => {
   }
   void runAction('translate');
 });
-[correctBtn, translateBtn].forEach((btn) =>
-  btn?.addEventListener('pointerdown', (event) => event.preventDefault()),
+[correctBtn, translateBtn, correctLangChip, translateLangChip].forEach((el) =>
+  el?.addEventListener('pointerdown', (event) => event.preventDefault()),
 );
 
 // Per-action language chips (click to open compact picker for this selection only)
@@ -1306,6 +1333,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
       correctionEnabled: changes.correctionEnabled?.newValue ?? settings.correctionEnabled,
       translationEnabled: changes.translationEnabled?.newValue ?? settings.translationEnabled,
       targetLanguage: changes.targetLanguage?.newValue ?? settings.targetLanguage,
+      correctionLanguage: changes.correctionLanguage?.newValue ?? settings.correctionLanguage,
       appLanguage: changes.appLanguage?.newValue ?? settings.appLanguage,
     };
     renderLabels();
@@ -1343,7 +1371,7 @@ void getPublicSettings()
   .then((stored) => {
     if (!isCurrentInstance()) return;
     settings = stored;
-    bubbleCorrectionLanguage = normalizeTargetLanguage(settings.targetLanguage);
+    bubbleCorrectionLanguage = normalizeTargetLanguage(settings.correctionLanguage);
     bubbleTranslationLanguage = normalizeTargetLanguage(settings.targetLanguage);
     renderLabels();
     renderBubbleLanguages();

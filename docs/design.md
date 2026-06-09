@@ -12,8 +12,9 @@ Orta is a selection tool: the user highlights any text on the page and Orta offe
 - The result panel shows the processed text (selectable) and a **Copy** button. The user pastes the result wherever they need it.
 - Translation uses a closed list of languages to avoid typos in the target language.
 - The Orta UI language is independent of the translation target language.
+- Correction and translation each have their own target language. The bubble exposes a per-action language chip; changing it persists the choice to settings, so it survives the next selection and page reloads (it does not reset to a single global default).
 - The popup lets the user turn Orta off globally or just for the current domain.
-- The options page concentrates the API key, global toggles, target language, AI model selection (Flash, Minimax, Grok, DeepSeek via Vercel AI Gateway), exclusions, and a list of domains blocked by default for safety (banks, payments, SSO, government).
+- The options page concentrates the API key, global toggles, separate correction and translation target languages, AI model selection (Flash, Minimax, Grok, DeepSeek via Vercel AI Gateway), exclusions, and a list of domains blocked by default for safety (banks, payments, SSO, government).
 - On pages flagged as sensitive (login/checkout-like URL paths, visible password fields, default-blocked domains), the bubble does not appear.
 - **AI model selection** is available in the Options page. Users can switch between `google/gemini-3.5-flash` (default), `minimax/minimax-m3`, `xai/grok-4.3`, and `deepseek/deepseek-v4-flash`. The choice is persisted in `chrome.storage.sync` and used for both correction/translation requests and API key validation against the gateway.
 
