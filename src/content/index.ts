@@ -39,6 +39,7 @@ const HIDE_DELAY_MS = 120;
 const PANEL_OFFSET = 8;
 const PANEL_MAX_WIDTH = 360;
 const COPIED_RESET_MS = 1600;
+const BUBBLE_LONG_PRESS_MS = 400;
 const INSTANCE_ID = crypto.randomUUID();
 
 let settings: PublicOrtaSettings = publicDefaults;
@@ -186,20 +187,20 @@ shadowRoot.innerHTML = `
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
 
-    /* Bubble */
+    /* Bubble — icon-only, minimal footprint */
     .bubble {
       align-items: center;
-      background: linear-gradient(180deg, rgba(24, 26, 34, 0.95), rgba(18, 20, 28, 0.95));
-      backdrop-filter: blur(14px) saturate(135%);
-      -webkit-backdrop-filter: blur(14px) saturate(135%);
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 999px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25);
+      background: rgba(20, 22, 28, 0.68);
+      backdrop-filter: blur(10px) saturate(120%);
+      -webkit-backdrop-filter: blur(10px) saturate(120%);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.12);
       color: #eef0f5;
       display: inline-flex;
       flex-wrap: nowrap;
-      gap: 2px;
-      padding: 3px;
+      gap: 0;
+      padding: 2px;
       width: max-content;
     }
 
@@ -207,55 +208,32 @@ shadowRoot.innerHTML = `
       align-items: center;
       background: transparent;
       border: 0;
-      border-radius: 999px;
-      color: rgba(220, 222, 232, 0.92);
+      border-radius: 6px;
+      color: rgba(220, 222, 232, 0.58);
       cursor: pointer;
       display: inline-flex;
       flex: 0 0 auto;
-      gap: 6px;
-      font: 600 11.5px/1.2 ui-sans-serif, system-ui, sans-serif;
-      letter-spacing: -0.005em;
-      padding: 6px 12px;
-      transition: background 140ms ease, color 140ms ease;
-      white-space: nowrap;
+      justify-content: center;
+      padding: 5px;
+      transition: background 120ms ease, color 120ms ease, opacity 120ms ease;
+    }
+
+    .bubble button + button {
+      border-left: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .bubble button:hover,
     .bubble button:focus-visible {
-      background: rgba(167, 139, 250, 0.16);
-      color: #c4b5fd;
+      background: rgba(255, 255, 255, 0.07);
+      color: rgba(238, 240, 245, 0.92);
       outline: none;
     }
 
-    .bubble button svg { width: 13px; height: 13px; }
-
-    .bubble .lang-chip {
-      align-items: center;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 999px;
-      color: rgba(220, 222, 232, 0.75);
-      cursor: pointer;
-      display: inline-flex;
-      font: 600 9px/1 ui-monospace, ui-sans-serif, system-ui, sans-serif;
-      letter-spacing: 0.02em;
-      margin-left: 4px;
-      padding: 1px 5px;
-      transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
-      user-select: none;
-    }
-
-    .bubble button:hover .lang-chip,
-    .bubble button:focus-visible .lang-chip {
-      background: rgba(167, 139, 250, 0.2);
-      border-color: rgba(167, 139, 250, 0.3);
-      color: #c4b5fd;
-    }
-
-    .bubble .lang-chip:hover {
-      background: rgba(167, 139, 250, 0.25);
-      border-color: rgba(167, 139, 250, 0.4);
-      color: #ddd6fe;
+    .bubble button svg {
+      display: block;
+      height: 13px;
+      opacity: 0.9;
+      width: 13px;
     }
 
     /* Compact language picker (appears on demand under the bubble; keeps UI non-intrusive) */
@@ -421,36 +399,29 @@ shadowRoot.innerHTML = `
       color: #86efac;
     }
 
-    /* Loading */
+    /* Loading — matches bubble footprint */
     .loading {
       align-items: center;
-      background: linear-gradient(180deg, rgba(24, 26, 34, 0.96), rgba(18, 20, 28, 0.96));
-      backdrop-filter: blur(14px) saturate(135%);
-      -webkit-backdrop-filter: blur(14px) saturate(135%);
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 14px;
-      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.25);
-      display: flex;
-      gap: 10px;
-      min-width: 148px;
-      padding: 10px 14px;
+      background: rgba(20, 22, 28, 0.68);
+      backdrop-filter: blur(10px) saturate(120%);
+      -webkit-backdrop-filter: blur(10px) saturate(120%);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.12);
+      display: inline-flex;
+      justify-content: center;
+      padding: 6px;
     }
 
     .spinner {
-      animation: orta-spin 820ms linear infinite;
-      border: 2px solid rgba(255, 255, 255, 0.1);
-      border-top-color: #a78bfa;
+      animation: orta-spin 900ms linear infinite;
+      border: 1.5px solid rgba(255, 255, 255, 0.08);
+      border-top-color: rgba(220, 222, 232, 0.52);
       border-radius: 999px;
-      height: 15px;
-      width: 15px;
       flex: 0 0 auto;
-    }
-
-    .loading-label {
-      color: #e0e2ed;
-      font: 600 12px/1.25 ui-sans-serif, system-ui, sans-serif;
-      letter-spacing: -0.006em;
-      padding: 1px 0;
+      height: 11px;
+      opacity: 0.9;
+      width: 11px;
     }
 
     @keyframes orta-spin {
@@ -467,24 +438,33 @@ shadowRoot.innerHTML = `
     /* Light theme overrides (respects prefers-color-scheme) */
     @media (prefers-color-scheme: light) {
       .bubble {
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 250, 252, 0.96));
-        border: 1px solid rgba(0, 0, 0, 0.09);
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.10), 0 3px 8px rgba(0, 0, 0, 0.05);
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
         color: #111827;
       }
 
       .bubble button {
-        color: #374151;
+        color: rgba(55, 65, 81, 0.55);
+      }
+
+      .bubble button + button {
+        border-left-color: rgba(0, 0, 0, 0.06);
       }
 
       .bubble button:hover,
       .bubble button:focus-visible {
-        background: rgba(124, 58, 237, 0.10);
-        color: #6d28d9;
+        background: rgba(0, 0, 0, 0.05);
+        color: rgba(17, 24, 39, 0.9);
       }
 
-      .result,
       .loading {
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+      }
+
+      .result {
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 250, 252, 0.96));
         border: 1px solid rgba(0, 0, 0, 0.09);
         box-shadow: 0 14px 36px rgba(0, 0, 0, 0.10), 0 3px 8px rgba(0, 0, 0, 0.05);
@@ -519,13 +499,9 @@ shadowRoot.innerHTML = `
         color: #166534;
       }
 
-      .loading-label {
-        color: #1f2937;
-      }
-
       .spinner {
-        border-color: rgba(0, 0, 0, 0.12);
-        border-top-color: #7c3aed;
+        border-color: rgba(0, 0, 0, 0.08);
+        border-top-color: rgba(55, 65, 81, 0.48);
       }
 
       .error-text {
@@ -536,25 +512,6 @@ shadowRoot.innerHTML = `
         background: rgba(22, 101, 52, 0.09);
         border-color: rgba(22, 101, 52, 0.35);
         color: #166534;
-      }
-
-      .bubble .lang-chip {
-        background: rgba(0, 0, 0, 0.06);
-        border-color: rgba(0, 0, 0, 0.1);
-        color: #4b5563;
-      }
-
-      .bubble button:hover .lang-chip,
-      .bubble button:focus-visible .lang-chip {
-        background: rgba(124, 58, 237, 0.12);
-        border-color: rgba(124, 58, 237, 0.25);
-        color: #5b21b6;
-      }
-
-      .bubble .lang-chip:hover {
-        background: rgba(124, 58, 237, 0.16);
-        border-color: rgba(124, 58, 237, 0.3);
-        color: #4c1d95;
       }
 
       .lang-picker {
@@ -585,20 +542,15 @@ shadowRoot.innerHTML = `
   <div class="panel" id="panel">
     <div class="bubble" id="bubble" role="toolbar" aria-label="Orta">
       <button class="bubble-action" data-action="correct" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="m15 6 3 3"/></svg>
-        <span data-label="correct"></span>
-        <span class="lang-chip" data-for="correct" aria-hidden="true"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="m15 6 3 3"/></svg>
       </button>
       <button class="bubble-action" data-action="translate" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m14 22 5-10 5 10"/><path d="M15.5 18h7"/></svg>
-        <span data-label="translate"></span>
-        <span class="lang-chip" data-for="translate" aria-hidden="true"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m14 22 5-10 5 10"/><path d="M15.5 18h7"/></svg>
       </button>
     </div>
     <div class="lang-picker" id="lang-picker" role="listbox" style="display:none;"></div>
-    <div class="loading" id="loading" style="display:none;">
+    <div class="loading" id="loading" role="status" aria-live="polite" style="display:none;">
       <span class="spinner" aria-hidden="true"></span>
-      <span class="loading-label" id="loading-label"></span>
     </div>
     <div class="result" id="result" style="display:none;">
       <div class="result-header">
@@ -658,7 +610,6 @@ if (!SKIP_FRAME) {
 const panel = shadowRoot.querySelector<HTMLDivElement>('#panel');
 const bubble = shadowRoot.querySelector<HTMLDivElement>('#bubble');
 const loading = shadowRoot.querySelector<HTMLDivElement>('#loading');
-const loadingLabel = shadowRoot.querySelector<HTMLSpanElement>('#loading-label');
 const resultBox = shadowRoot.querySelector<HTMLDivElement>('#result');
 const resultTitle = shadowRoot.querySelector<HTMLSpanElement>('#result-title');
 const resultText = shadowRoot.querySelector<HTMLDivElement>('#result-text');
@@ -671,12 +622,7 @@ const errorText = shadowRoot.querySelector<HTMLDivElement>('#error-text');
 const errorClose = shadowRoot.querySelector<HTMLButtonElement>('#error-close');
 const correctBtn = shadowRoot.querySelector<HTMLButtonElement>('[data-action="correct"]');
 const translateBtn = shadowRoot.querySelector<HTMLButtonElement>('[data-action="translate"]');
-const correctLabel = shadowRoot.querySelector<HTMLSpanElement>('[data-label="correct"]');
-const translateLabel = shadowRoot.querySelector<HTMLSpanElement>('[data-label="translate"]');
 const noChangesBadge = shadowRoot.querySelector<HTMLSpanElement>('#no-changes-badge');
-
-const correctLangChip = shadowRoot.querySelector<HTMLSpanElement>('[data-for="correct"]');
-const translateLangChip = shadowRoot.querySelector<HTMLSpanElement>('[data-for="translate"]');
 const langPicker = shadowRoot.querySelector<HTMLDivElement>('#lang-picker');
 
 // ===== Selection reading =====
@@ -779,8 +725,6 @@ const positionPanel = (rect: DOMRect): void => {
 const renderLabels = (): void => {
   const copy = getContentCopy();
 
-  if (correctLabel) correctLabel.textContent = copy.correctAction;
-  if (translateLabel) translateLabel.textContent = copy.translateAction;
   if (copyLabel) copyLabel.textContent = copy.copyAction;
 
   if (correctBtn) correctBtn.style.display = settings.correctionEnabled ? '' : 'none';
@@ -791,22 +735,18 @@ const renderBubbleLanguages = (): void => {
   const copy = getContentCopy();
   const appLang = normalizeAppLanguage(settings.appLanguage);
 
-  if (correctLangChip) {
-    const short = bubbleCorrectionLanguage.toUpperCase().replace(/-HANS/i, '');
-    correctLangChip.textContent = short;
+  if (correctBtn) {
     const fullLabel = getTargetLanguageLabel(bubbleCorrectionLanguage, appLang);
-    const title = `${copy.correctionLanguageLabel}: ${fullLabel}`;
-    correctLangChip.title = title;
-    correctLangChip.setAttribute('aria-label', title);
+    const label = `${copy.correctAction} (${fullLabel})`;
+    correctBtn.title = label;
+    correctBtn.setAttribute('aria-label', label);
   }
 
-  if (translateLangChip) {
-    const short = bubbleTranslationLanguage.toUpperCase().replace(/-HANS/i, '');
-    translateLangChip.textContent = short;
+  if (translateBtn) {
     const fullLabel = getTargetLanguageLabel(bubbleTranslationLanguage, appLang);
-    const title = `${copy.translationLanguageLabel}: ${fullLabel}`;
-    translateLangChip.title = title;
-    translateLangChip.setAttribute('aria-label', title);
+    const label = `${copy.translateAction} (${fullLabel})`;
+    translateBtn.title = label;
+    translateBtn.setAttribute('aria-label', label);
   }
 };
 
@@ -928,8 +868,13 @@ const showBubble = (
   });
 };
 
-const showLoading = (label: string, rect: DOMRect): void => {
-  if (loadingLabel) loadingLabel.textContent = label;
+const showLoading = (action: OrtaAction, rect: DOMRect): void => {
+  const copy = getContentCopy();
+  const label = action === 'correct' ? copy.correctAction : copy.translateAction;
+  if (loading) {
+    loading.setAttribute('aria-label', label);
+    loading.title = label;
+  }
   setMode('loading');
   positionPanel(rect);
 };
@@ -1006,7 +951,7 @@ const runAction = async (action: OrtaAction): Promise<void> => {
   const copy = getContentCopy();
 
   isProcessing = true;
-  showLoading(action === 'correct' ? copy.correctAction : copy.translateAction, snapshot.rect);
+  showLoading(action, snapshot.rect);
 
   const overrides =
     action === 'correct'
@@ -1253,56 +1198,57 @@ if (!SKIP_FRAME) {
   );
 }
 
-// Bubble interactions
-correctBtn?.addEventListener('click', (event) => {
-  event.preventDefault();
-  event.stopPropagation();
-  const wasPickerOpen = !!(langPicker && langPicker.style.display !== 'none');
-  hideLangPicker();
-  if (wasPickerOpen) {
-    // Picker was visible: treat button click as dismiss only (non-intrusive)
-    return;
-  }
-  void runAction('correct');
-});
-translateBtn?.addEventListener('click', (event) => {
-  event.preventDefault();
-  event.stopPropagation();
-  const wasPickerOpen = !!(langPicker && langPicker.style.display !== 'none');
-  hideLangPicker();
-  if (wasPickerOpen) {
-    // Picker was visible: treat button click as dismiss only (non-intrusive)
-    return;
-  }
-  void runAction('translate');
-});
-[correctBtn, translateBtn, correctLangChip, translateLangChip].forEach((el) =>
-  el?.addEventListener('pointerdown', (event) => event.preventDefault()),
-);
+// Bubble interactions — click runs action; long-press opens language picker
+const bindBubbleAction = (
+  btn: HTMLButtonElement | null,
+  action: 'correct' | 'translate',
+): void => {
+  if (!btn) return;
 
-// Per-action language chips (click to open compact picker for this selection only)
-correctLangChip?.addEventListener('click', (event) => {
-  event.preventDefault();
-  event.stopPropagation();
-  event.stopImmediatePropagation();
-  if (!correctLangChip) return;
-  if (activeLangAction === 'correct' && langPicker && langPicker.style.display !== 'none') {
+  let pressTimer = 0;
+  let didLongPress = false;
+
+  const clearPress = (): void => {
+    if (pressTimer) {
+      window.clearTimeout(pressTimer);
+      pressTimer = 0;
+    }
+  };
+
+  btn.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    didLongPress = false;
+    clearPress();
+    pressTimer = window.setTimeout(() => {
+      didLongPress = true;
+      if (activeLangAction === action && langPicker && langPicker.style.display !== 'none') {
+        hideLangPicker();
+      } else {
+        showLangPicker(action, btn);
+      }
+    }, BUBBLE_LONG_PRESS_MS);
+  });
+
+  btn.addEventListener('pointerup', clearPress);
+  btn.addEventListener('pointerleave', clearPress);
+  btn.addEventListener('pointercancel', clearPress);
+
+  btn.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (didLongPress) {
+      didLongPress = false;
+      return;
+    }
+    const wasPickerOpen = !!(langPicker && langPicker.style.display !== 'none');
     hideLangPicker();
-  } else {
-    showLangPicker('correct', correctLangChip);
-  }
-});
-translateLangChip?.addEventListener('click', (event) => {
-  event.preventDefault();
-  event.stopPropagation();
-  event.stopImmediatePropagation();
-  if (!translateLangChip) return;
-  if (activeLangAction === 'translate' && langPicker && langPicker.style.display !== 'none') {
-    hideLangPicker();
-  } else {
-    showLangPicker('translate', translateLangChip);
-  }
-});
+    if (wasPickerOpen) return;
+    void runAction(action);
+  });
+};
+
+bindBubbleAction(correctBtn, 'correct');
+bindBubbleAction(translateBtn, 'translate');
 
 // Dismiss open language picker on clicks elsewhere in the panel (keeps it non-intrusive)
 panel?.addEventListener('click', (event) => {
