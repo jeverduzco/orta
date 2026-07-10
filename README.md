@@ -64,7 +64,7 @@ Supported models (selectable in Options → Connection → AI model):
 |---------------------------------|------------------------|-----------|
 | `google/gemini-3.5-flash`       | Flash (Gemini 3.5)     | Default   |
 | `minimax/minimax-m3`          | Minimax M3           |           |
-| `xai/grok-4.3`                  | Grok 4.3 (xAI)         |           |
+| `xai/grok-4.5`                  | Grok 4.5 (xAI)         |           |
 | `deepseek/deepseek-v4-flash`    | DeepSeek V4 Flash      |           |
 
 Each user supplies their own API key. If you want to ship Orta with a managed key (e.g. for a published Chrome Web Store build), proxy these requests through your own backend so the key never lives in the extension bundle.

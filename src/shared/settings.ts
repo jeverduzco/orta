@@ -1,6 +1,19 @@
 import { DEFAULT_TARGET_LANGUAGE } from './languages';
 import { DEFAULT_APP_LANGUAGE } from './appLanguage';
-import { DEFAULT_MODEL_ID } from './messages';
+import { DEFAULT_MODEL_ID, MODEL_OPTIONS, type ModelId } from './messages';
+
+/** Retired model ids mapped to their replacement. */
+const MODEL_ID_MIGRATIONS: Record<string, ModelId> = {
+  'xai/grok-4.3': 'xai/grok-4.5',
+};
+
+const VALID_MODEL_IDS = new Set<string>(MODEL_OPTIONS.map((option) => option.id));
+
+const normalizeModelId = (model: string | undefined): string => {
+  if (!model) return DEFAULT_MODEL_ID;
+  const migrated = MODEL_ID_MIGRATIONS[model] ?? model;
+  return VALID_MODEL_IDS.has(migrated) ? migrated : DEFAULT_MODEL_ID;
+};
 
 export type PublicOrtaSettings = {
   enabled: boolean;
@@ -122,8 +135,15 @@ export const getPublicSettings = async (): Promise<PublicOrtaSettings> => {
     getFromStorage<LocalSettings>(chrome.storage.local, localDefaults),
   ]);
 
+  const model = normalizeModelId(sync.model);
+  // Persist migration once so storage and the options UI stay in sync.
+  if (model !== sync.model) {
+    void setInStorage<SyncSettings>(chrome.storage.sync, { model });
+  }
+
   return {
     ...sync,
+    model,
     disabledSites: migrated ?? local.disabledSites,
   };
 };
