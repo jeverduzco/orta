@@ -36,7 +36,7 @@ const ROOT_TAG = 'orta-root';
 const MIN_SELECTION_LENGTH = 2;
 const SELECTION_DEBOUNCE_MS = 90;
 const HIDE_DELAY_MS = 120;
-const PANEL_OFFSET = 8;
+const PANEL_OFFSET = 5;
 const PANEL_MAX_WIDTH = 360;
 const COPIED_RESET_MS = 1600;
 const BUBBLE_LONG_PRESS_MS = 400;
@@ -177,30 +177,67 @@ shadowRoot.innerHTML = `
       pointer-events: auto;
       width: max-content;
       max-width: ${PANEL_MAX_WIDTH}px;
-      animation: orta-pop 130ms ease-out;
+      will-change: transform, opacity, filter;
     }
 
-    .panel[data-visible="true"] { display: block; }
-
-    @keyframes orta-pop {
-      from { opacity: 0; transform: translateY(-2px) scale(0.98); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
+    .panel[data-visible="true"] {
+      display: block;
     }
 
-    /* Bubble — icon-only, minimal footprint */
+    /* Emerge from the selection — transform is free because position uses left/top */
+    .panel[data-visible="true"][data-animate="true"] {
+      animation: orta-emerge 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .panel[data-placement="above"] {
+      --orta-enter-y: 7px;
+    }
+
+    .panel[data-placement="below"] {
+      --orta-enter-y: -7px;
+    }
+
+    @keyframes orta-emerge {
+      from {
+        opacity: 0;
+        filter: blur(4px);
+        transform: translateY(var(--orta-enter-y, 6px)) scale(0.92);
+      }
+      to {
+        opacity: 1;
+        filter: blur(0);
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .panel[data-visible="true"][data-animate="true"] {
+        animation: orta-emerge-reduced 120ms ease-out both;
+      }
+
+      @keyframes orta-emerge-reduced {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+    }
+
+    /* Bubble — ghost chip that sits against the selection, not a heavy toolbar */
     .bubble {
       align-items: center;
-      background: rgba(20, 22, 28, 0.68);
-      backdrop-filter: blur(10px) saturate(120%);
-      -webkit-backdrop-filter: blur(10px) saturate(120%);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.12);
+      background: rgba(18, 20, 26, 0.38);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 999px;
+      box-shadow:
+        0 0 0 0.5px rgba(255, 255, 255, 0.04) inset,
+        0 1px 2px rgba(0, 0, 0, 0.06),
+        0 6px 18px -6px rgba(0, 0, 0, 0.28);
       color: #eef0f5;
       display: inline-flex;
       flex-wrap: nowrap;
-      gap: 0;
-      padding: 2px;
+      gap: 1px;
+      padding: 3px;
       width: max-content;
     }
 
@@ -208,32 +245,43 @@ shadowRoot.innerHTML = `
       align-items: center;
       background: transparent;
       border: 0;
-      border-radius: 6px;
-      color: rgba(220, 222, 232, 0.58);
+      border-radius: 999px;
+      color: rgba(220, 222, 232, 0.48);
       cursor: pointer;
       display: inline-flex;
       flex: 0 0 auto;
       justify-content: center;
-      padding: 5px;
-      transition: background 120ms ease, color 120ms ease, opacity 120ms ease;
+      padding: 5px 7px;
+      transition:
+        background 160ms ease,
+        color 160ms ease,
+        transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 160ms ease;
     }
 
     .bubble button + button {
-      border-left: 1px solid rgba(255, 255, 255, 0.05);
+      /* soft separator without a hard rail */
+      box-shadow: -1px 0 0 rgba(255, 255, 255, 0.05);
     }
 
     .bubble button:hover,
     .bubble button:focus-visible {
-      background: rgba(255, 255, 255, 0.07);
-      color: rgba(238, 240, 245, 0.92);
+      background: rgba(255, 255, 255, 0.09);
+      color: rgba(248, 249, 252, 0.96);
       outline: none;
+      transform: scale(1.06);
+    }
+
+    .bubble button:active {
+      transform: scale(0.94);
+      transition-duration: 70ms;
     }
 
     .bubble button svg {
       display: block;
-      height: 13px;
-      opacity: 0.9;
-      width: 13px;
+      height: 12px;
+      opacity: 0.88;
+      width: 12px;
     }
 
     /* Compact language picker (appears on demand under the bubble; keeps UI non-intrusive) */
@@ -399,28 +447,31 @@ shadowRoot.innerHTML = `
       color: #86efac;
     }
 
-    /* Loading — matches bubble footprint */
+    /* Loading — same ghost chip language as the bubble */
     .loading {
       align-items: center;
-      background: rgba(20, 22, 28, 0.68);
-      backdrop-filter: blur(10px) saturate(120%);
-      -webkit-backdrop-filter: blur(10px) saturate(120%);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.12);
+      background: rgba(18, 20, 26, 0.38);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 999px;
+      box-shadow:
+        0 0 0 0.5px rgba(255, 255, 255, 0.04) inset,
+        0 1px 2px rgba(0, 0, 0, 0.06),
+        0 6px 18px -6px rgba(0, 0, 0, 0.28);
       display: inline-flex;
       justify-content: center;
-      padding: 6px;
+      padding: 7px 10px;
     }
 
     .spinner {
       animation: orta-spin 900ms linear infinite;
       border: 1.5px solid rgba(255, 255, 255, 0.08);
-      border-top-color: rgba(220, 222, 232, 0.52);
+      border-top-color: rgba(220, 222, 232, 0.48);
       border-radius: 999px;
       flex: 0 0 auto;
       height: 11px;
-      opacity: 0.9;
+      opacity: 0.85;
       width: 11px;
     }
 
@@ -438,30 +489,36 @@ shadowRoot.innerHTML = `
     /* Light theme overrides (respects prefers-color-scheme) */
     @media (prefers-color-scheme: light) {
       .bubble {
-        background: rgba(255, 255, 255, 0.78);
+        background: rgba(255, 255, 255, 0.52);
         border: 1px solid rgba(0, 0, 0, 0.06);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+        box-shadow:
+          0 0 0 0.5px rgba(255, 255, 255, 0.65) inset,
+          0 1px 2px rgba(0, 0, 0, 0.04),
+          0 6px 16px -6px rgba(0, 0, 0, 0.12);
         color: #111827;
       }
 
       .bubble button {
-        color: rgba(55, 65, 81, 0.55);
+        color: rgba(55, 65, 81, 0.48);
       }
 
       .bubble button + button {
-        border-left-color: rgba(0, 0, 0, 0.06);
+        box-shadow: -1px 0 0 rgba(0, 0, 0, 0.06);
       }
 
       .bubble button:hover,
       .bubble button:focus-visible {
         background: rgba(0, 0, 0, 0.05);
-        color: rgba(17, 24, 39, 0.9);
+        color: rgba(17, 24, 39, 0.92);
       }
 
       .loading {
-        background: rgba(255, 255, 255, 0.78);
+        background: rgba(255, 255, 255, 0.52);
         border: 1px solid rgba(0, 0, 0, 0.06);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+        box-shadow:
+          0 0 0 0.5px rgba(255, 255, 255, 0.65) inset,
+          0 1px 2px rgba(0, 0, 0, 0.04),
+          0 6px 16px -6px rgba(0, 0, 0, 0.12);
       }
 
       .result {
@@ -694,6 +751,7 @@ const hidePanel = (): void => {
   cancelHideTimeout();
   if (!panel) return;
   panel.setAttribute('data-visible', 'false');
+  panel.removeAttribute('data-animate');
   currentSnapshot = null;
   hideLangPicker();
   setMode('bubble');
@@ -701,12 +759,22 @@ const hidePanel = (): void => {
 
 const positionPanel = (rect: DOMRect): void => {
   if (!panel) return;
-  // Wait a frame so the panel has its real dimensions for clamping.
-  panel.setAttribute('data-visible', 'true');
+  const wasVisible = panel.getAttribute('data-visible') === 'true';
+
+  // Stage invisibly on first show so we can measure + place before the emerge
+  // animation starts — otherwise transform keyframes fight a late left/top jump.
+  if (!wasVisible) {
+    panel.style.visibility = 'hidden';
+    panel.removeAttribute('data-animate');
+    panel.setAttribute('data-visible', 'true');
+  }
+
   requestAnimationFrame(() => {
-    const panelRect = panel.getBoundingClientRect();
-    const panelW = panelRect.width || 200;
-    const panelH = panelRect.height || 40;
+    if (!panel) return;
+    // Prefer layout size over getBoundingClientRect so an in-flight scale
+    // animation (or the hidden stage) doesn't under-report dimensions.
+    const panelW = panel.offsetWidth || 200;
+    const panelH = panel.offsetHeight || 40;
     const scrollX = window.scrollX || window.pageXOffset || 0;
     const scrollY = window.scrollY || window.pageYOffset || 0;
     const vw = window.innerWidth;
@@ -718,7 +786,26 @@ const positionPanel = (rect: DOMRect): void => {
     const clampedLeft = Math.max(8, Math.min(centerX, vw - panelW - 8));
     const clampedTop = Math.max(8, Math.min(topVp, vh - panelH - 8));
 
-    panel.style.transform = `translate(${Math.round(clampedLeft + scrollX)}px, ${Math.round(clampedTop + scrollY)}px)`;
+    panel.dataset.placement = wantAbove ? 'above' : 'below';
+    // Position via left/top so enter animation can own transform freely.
+    panel.style.left = `${Math.round(clampedLeft + scrollX)}px`;
+    panel.style.top = `${Math.round(clampedTop + scrollY)}px`;
+    panel.style.transform = '';
+
+    if (!wasVisible) {
+      panel.style.visibility = '';
+      // Reflow, then play emerge from the final seat next to the selection.
+      void panel.offsetWidth;
+      panel.setAttribute('data-animate', 'true');
+
+      const clearAnimate = (): void => {
+        panel.removeAttribute('data-animate');
+        panel.removeEventListener('animationend', clearAnimate);
+      };
+      panel.addEventListener('animationend', clearAnimate);
+      // Safety if animationend is skipped (display toggle, reduced-motion path).
+      window.setTimeout(clearAnimate, 320);
+    }
   });
 };
 
