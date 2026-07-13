@@ -6,9 +6,10 @@ Orta is a selection tool: the user highlights any text on the page and Orta offe
 
 ## Experience
 
-- When the user selects text (with mouse, touch, or keyboard) on any page, Orta shows a floating bubble with the available actions: **Correct** and **Translate**.
-- The bubble positions itself above or below the selection depending on available screen space.
-- When an action is pressed, the bubble morphs into a spinner and then into a panel with the result.
+- When the user selects text (with mouse, touch, or keyboard) on any page, Orta shows a **tiny handle** (a small purple dot) parked to the **left of the selection** (first line when multi-line). It follows the selection on scroll/resize.
+- Hovering the handle (or tapping it on touch) expands a compact action chip with **Correct** and **Translate**. Actions grow leftward so they do not cover the highlighted text. Long-press still opens the per-action language picker.
+- Loading and result panels still place themselves above or below the selection for readability.
+- When an action is pressed, the UI morphs into a spinner and then into a panel with the result.
 - The result panel shows the processed text (selectable) and a **Copy** button. The user pastes the result wherever they need it.
 - Translation uses a closed list of languages to avoid typos in the target language.
 - The Orta UI language is independent of the translation target language.

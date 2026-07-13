@@ -37,6 +37,7 @@ const MIN_SELECTION_LENGTH = 2;
 const SELECTION_DEBOUNCE_MS = 90;
 const HIDE_DELAY_MS = 120;
 const PANEL_OFFSET = 5;
+const BUBBLE_SIDE_GAP = 6;
 const PANEL_MAX_WIDTH = 360;
 const COPIED_RESET_MS = 1600;
 const BUBBLE_LONG_PRESS_MS = 400;
@@ -51,6 +52,9 @@ let contextValid = true;
 let teardownDone = false;
 let hideTimeout = 0;
 let copiedTimeout = 0;
+let positionRaf = 0;
+/** True while the user is mid-gesture (mouse/touch drag). Bubble must not steal events. */
+let isPointerSelecting = false;
 const teardownController = new AbortController();
 
 let bubbleCorrectionLanguage: TargetLanguageCode = DEFAULT_TARGET_LANGUAGE;
@@ -177,42 +181,53 @@ shadowRoot.innerHTML = `
       pointer-events: auto;
       width: max-content;
       max-width: ${PANEL_MAX_WIDTH}px;
-      will-change: transform, opacity, filter;
+      /* Avoid will-change:filter — it promoted huge layers and flashed the page. */
+      will-change: transform, opacity;
     }
 
     .panel[data-visible="true"] {
       display: block;
     }
 
-    /* Emerge from the selection — transform is free because position uses left/top */
-    .panel[data-visible="true"][data-animate="true"] {
-      animation: orta-emerge 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
-    }
-
+    /*
+     * Placement pin (left bubble): left/top mark the selection edge; transform
+     * shifts the panel so its right edge sits on that point. Expanding actions
+     * then grow leftward without any re-measure / re-anchor loop.
+     */
     .panel[data-placement="above"] {
-      --orta-enter-y: 7px;
+      --orta-pin: translate(0, 0);
+      --orta-enter: translate(0, 7px) scale(0.92);
     }
 
     .panel[data-placement="below"] {
-      --orta-enter-y: -7px;
+      --orta-pin: translate(0, 0);
+      --orta-enter: translate(0, -7px) scale(0.92);
+    }
+
+    .panel[data-placement="left"] {
+      --orta-pin: translate(-100%, -50%);
+      --orta-enter: translate(calc(-100% + 6px), -50%) scale(0.92);
+      transform: translate(-100%, -50%);
+    }
+
+    .panel[data-visible="true"][data-animate="true"] {
+      animation: orta-emerge 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
     @keyframes orta-emerge {
       from {
         opacity: 0;
-        filter: blur(4px);
-        transform: translateY(var(--orta-enter-y, 6px)) scale(0.92);
+        transform: var(--orta-enter, translate(0, 6px) scale(0.92));
       }
       to {
         opacity: 1;
-        filter: blur(0);
-        transform: translateY(0) scale(1);
+        transform: var(--orta-pin, translate(0, 0));
       }
     }
 
     @media (prefers-reduced-motion: reduce) {
       .panel[data-visible="true"][data-animate="true"] {
-        animation: orta-emerge-reduced 120ms ease-out both;
+        animation: orta-emerge-reduced 100ms ease-out both;
       }
 
       @keyframes orta-emerge-reduced {
@@ -221,27 +236,135 @@ shadowRoot.innerHTML = `
       }
     }
 
-    /* Bubble — ghost chip that sits against the selection, not a heavy toolbar */
+    /* While the user is still dragging a selection, never intercept the pointer. */
+    .panel[data-inert="true"] {
+      pointer-events: none !important;
+    }
+
+    /*
+     * Bubble — tiny handle parked left of the selection.
+     * Collapsed by default; hover / focus / touch-expand reveals the actions.
+     * Actions sit to the left of the handle so growth never covers the text.
+     */
     .bubble {
       align-items: center;
-      background: rgba(18, 20, 26, 0.38);
-      backdrop-filter: blur(18px) saturate(150%);
-      -webkit-backdrop-filter: blur(18px) saturate(150%);
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      color: #eef0f5;
+      display: inline-flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      gap: 0;
+      width: max-content;
+      /* Anchor the handle (right edge) to the selection; actions grow leftward */
+      transform-origin: right center;
+    }
+
+    .bubble-handle {
+      align-items: center;
+      /* Solid fill — no backdrop-filter. Moving a blurred layer every selection
+         tick was causing full-page paint flashes on many sites. */
+      background: rgba(24, 26, 34, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      box-shadow:
+        0 0 0 0.5px rgba(255, 255, 255, 0.05) inset,
+        0 1px 2px rgba(0, 0, 0, 0.12),
+        0 3px 8px -3px rgba(0, 0, 0, 0.35);
+      color: rgba(196, 181, 253, 0.95);
+      cursor: pointer;
+      display: inline-flex;
+      flex: 0 0 auto;
+      height: 12px;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+      position: relative;
+      transition:
+        background 160ms ease,
+        border-color 160ms ease,
+        color 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+      width: 12px;
+      z-index: 1;
+    }
+
+    /* Modest hit padding — large enough to hover, small enough not to sit on the text */
+    .bubble-handle::before {
+      content: "";
+      inset: -5px;
+      position: absolute;
+    }
+
+    .bubble-handle::after {
+      background: currentColor;
+      border-radius: 999px;
+      content: "";
+      height: 4px;
+      opacity: 0.9;
+      width: 4px;
+    }
+
+    .bubble-handle:hover,
+    .bubble-handle:focus-visible,
+    .bubble:hover .bubble-handle,
+    .bubble:focus-within .bubble-handle,
+    .bubble[data-expanded="true"] .bubble-handle {
+      background: rgba(18, 20, 26, 0.62);
+      border-color: rgba(167, 139, 250, 0.45);
+      color: rgba(196, 181, 253, 1);
+      box-shadow:
+        0 0 0 0.5px rgba(167, 139, 250, 0.2) inset,
+        0 0 0 3px rgba(167, 139, 250, 0.12),
+        0 2px 8px -2px rgba(0, 0, 0, 0.35);
+      outline: none;
+    }
+
+    .bubble-handle:active {
+      transform: scale(0.92);
+      transition-duration: 70ms;
+    }
+
+    .bubble-actions {
+      align-items: center;
+      /* Solid fill — avoid backdrop-filter paint storms while the chip opens */
+      background: rgba(24, 26, 34, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 999px;
       box-shadow:
         0 0 0 0.5px rgba(255, 255, 255, 0.04) inset,
-        0 1px 2px rgba(0, 0, 0, 0.06),
-        0 6px 18px -6px rgba(0, 0, 0, 0.28);
-      color: #eef0f5;
+        0 1px 2px rgba(0, 0, 0, 0.08),
+        0 6px 16px -6px rgba(0, 0, 0, 0.32);
       display: inline-flex;
       flex-wrap: nowrap;
       gap: 1px;
-      padding: 3px;
+      margin-right: 4px;
+      max-width: 0;
+      opacity: 0;
+      overflow: hidden;
+      padding: 0;
+      pointer-events: none;
+      transform: translateX(4px) scale(0.92);
+      transform-origin: right center;
+      transition:
+        max-width 180ms cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 120ms ease,
+        padding 180ms cubic-bezier(0.16, 1, 0.3, 1),
+        transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
       width: max-content;
     }
 
-    .bubble button {
+    .bubble:hover .bubble-actions,
+    .bubble:focus-within .bubble-actions,
+    .bubble[data-expanded="true"] .bubble-actions {
+      max-width: 120px;
+      margin-right: 4px;
+      opacity: 1;
+      padding: 2px;
+      pointer-events: auto;
+      transform: translateX(0) scale(1);
+    }
+
+    .bubble-actions button {
       align-items: center;
       background: transparent;
       border: 0;
@@ -251,7 +374,7 @@ shadowRoot.innerHTML = `
       display: inline-flex;
       flex: 0 0 auto;
       justify-content: center;
-      padding: 5px 7px;
+      padding: 4px 6px;
       transition:
         background 160ms ease,
         color 160ms ease,
@@ -259,29 +382,34 @@ shadowRoot.innerHTML = `
         opacity 160ms ease;
     }
 
-    .bubble button + button {
-      /* soft separator without a hard rail */
+    .bubble-actions button + button {
       box-shadow: -1px 0 0 rgba(255, 255, 255, 0.05);
     }
 
-    .bubble button:hover,
-    .bubble button:focus-visible {
+    .bubble-actions button:hover,
+    .bubble-actions button:focus-visible {
       background: rgba(255, 255, 255, 0.09);
       color: rgba(248, 249, 252, 0.96);
       outline: none;
       transform: scale(1.06);
     }
 
-    .bubble button:active {
+    .bubble-actions button:active {
       transform: scale(0.94);
       transition-duration: 70ms;
     }
 
-    .bubble button svg {
+    .bubble-actions button svg {
       display: block;
-      height: 12px;
+      height: 11px;
       opacity: 0.88;
-      width: 12px;
+      width: 11px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .bubble-actions {
+        transition: opacity 80ms ease, max-width 0ms;
+      }
     }
 
     /* Compact language picker (appears on demand under the bubble; keeps UI non-intrusive) */
@@ -489,25 +617,52 @@ shadowRoot.innerHTML = `
     /* Light theme overrides (respects prefers-color-scheme) */
     @media (prefers-color-scheme: light) {
       .bubble {
-        background: rgba(255, 255, 255, 0.52);
-        border: 1px solid rgba(0, 0, 0, 0.06);
-        box-shadow:
-          0 0 0 0.5px rgba(255, 255, 255, 0.65) inset,
-          0 1px 2px rgba(0, 0, 0, 0.04),
-          0 6px 16px -6px rgba(0, 0, 0, 0.12);
         color: #111827;
       }
 
-      .bubble button {
+      .bubble-handle {
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow:
+          0 0 0 0.5px rgba(255, 255, 255, 0.8) inset,
+          0 1px 2px rgba(0, 0, 0, 0.06),
+          0 3px 8px -3px rgba(0, 0, 0, 0.14);
+        color: rgba(109, 40, 217, 0.9);
+      }
+
+      .bubble-handle:hover,
+      .bubble-handle:focus-visible,
+      .bubble:hover .bubble-handle,
+      .bubble:focus-within .bubble-handle,
+      .bubble[data-expanded="true"] .bubble-handle {
+        background: #ffffff;
+        border-color: rgba(124, 58, 237, 0.4);
+        color: rgba(91, 33, 182, 1);
+        box-shadow:
+          0 0 0 0.5px rgba(124, 58, 237, 0.15) inset,
+          0 0 0 3px rgba(124, 58, 237, 0.1),
+          0 2px 8px -2px rgba(0, 0, 0, 0.12);
+      }
+
+      .bubble-actions {
+        background: rgba(255, 255, 255, 0.97);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow:
+          0 0 0 0.5px rgba(255, 255, 255, 0.8) inset,
+          0 1px 2px rgba(0, 0, 0, 0.05),
+          0 6px 14px -6px rgba(0, 0, 0, 0.14);
+      }
+
+      .bubble-actions button {
         color: rgba(55, 65, 81, 0.48);
       }
 
-      .bubble button + button {
+      .bubble-actions button + button {
         box-shadow: -1px 0 0 rgba(0, 0, 0, 0.06);
       }
 
-      .bubble button:hover,
-      .bubble button:focus-visible {
+      .bubble-actions button:hover,
+      .bubble-actions button:focus-visible {
         background: rgba(0, 0, 0, 0.05);
         color: rgba(17, 24, 39, 0.92);
       }
@@ -598,12 +753,15 @@ shadowRoot.innerHTML = `
   </style>
   <div class="panel" id="panel">
     <div class="bubble" id="bubble" role="toolbar" aria-label="Orta">
-      <button class="bubble-action" data-action="correct" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="m15 6 3 3"/></svg>
-      </button>
-      <button class="bubble-action" data-action="translate" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m14 22 5-10 5 10"/><path d="M15.5 18h7"/></svg>
-      </button>
+      <div class="bubble-actions" id="bubble-actions">
+        <button class="bubble-action" data-action="correct" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="m15 6 3 3"/></svg>
+        </button>
+        <button class="bubble-action" data-action="translate" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m14 22 5-10 5 10"/><path d="M15.5 18h7"/></svg>
+        </button>
+      </div>
+      <button class="bubble-handle" id="bubble-handle" type="button" aria-label="Orta" aria-expanded="false" title="Orta"></button>
     </div>
     <div class="lang-picker" id="lang-picker" role="listbox" style="display:none;"></div>
     <div class="loading" id="loading" role="status" aria-live="polite" style="display:none;">
@@ -666,6 +824,7 @@ if (!SKIP_FRAME) {
 
 const panel = shadowRoot.querySelector<HTMLDivElement>('#panel');
 const bubble = shadowRoot.querySelector<HTMLDivElement>('#bubble');
+const bubbleHandle = shadowRoot.querySelector<HTMLButtonElement>('#bubble-handle');
 const loading = shadowRoot.querySelector<HTMLDivElement>('#loading');
 const resultBox = shadowRoot.querySelector<HTMLDivElement>('#result');
 const resultTitle = shadowRoot.querySelector<HTMLSpanElement>('#result-title');
@@ -726,6 +885,44 @@ const readActiveSelection = (): SelectionSnapshot | null => {
   return readWindowSelection();
 };
 
+/**
+ * Anchor rect for the tiny left-side handle: prefer the first line of a range
+ * selection so the handle tracks the start of the highlight, not the full box.
+ */
+const getBubbleAnchorRect = (snapshot: SelectionSnapshot): DOMRect => {
+  if (snapshot.source === 'range') {
+    try {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const rects = sel.getRangeAt(0).getClientRects();
+        for (let i = 0; i < rects.length; i += 1) {
+          const r = rects[i];
+          if (r && (r.width > 0 || r.height > 0)) return r;
+        }
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+  return snapshot.rect;
+};
+
+const setBubbleExpanded = (expanded: boolean): void => {
+  if (!bubble) return;
+  if (expanded) {
+    bubble.dataset.expanded = 'true';
+  } else {
+    delete bubble.dataset.expanded;
+  }
+  if (bubbleHandle) {
+    bubbleHandle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  }
+};
+
+const collapseBubble = (): void => {
+  setBubbleExpanded(false);
+};
+
 // ===== Panel state =====
 
 const cancelHideTimeout = (): void => {
@@ -752,60 +949,115 @@ const hidePanel = (): void => {
   if (!panel) return;
   panel.setAttribute('data-visible', 'false');
   panel.removeAttribute('data-animate');
+  panel.removeAttribute('data-inert');
+  panel.style.transform = '';
   currentSnapshot = null;
   hideLangPicker();
+  collapseBubble();
   setMode('bubble');
 };
 
-const positionPanel = (rect: DOMRect): void => {
+const setPanelInteractive = (interactive: boolean): void => {
+  if (!panel) return;
+  if (interactive) {
+    panel.removeAttribute('data-inert');
+  } else {
+    panel.setAttribute('data-inert', 'true');
+  }
+};
+
+/**
+ * Place the panel. For left (bubble handle) placement, left/top mark the
+ * selection edge and CSS `transform: translate(-100%, -50%)` pins the handle
+ * there — expanding actions never need a re-measure loop.
+ */
+const positionPanel = (
+  rect: DOMRect,
+  options?: { placement?: 'auto' | 'left'; animate?: boolean },
+): void => {
   if (!panel) return;
   const wasVisible = panel.getAttribute('data-visible') === 'true';
+  const preferLeft =
+    options?.placement === 'left' || (options?.placement !== 'auto' && panelMode === 'bubble');
+  // Only animate the first time the panel appears; never re-emerge on every
+  // selection tick (that was a major source of flicker).
+  const shouldAnimate = options?.animate === true || (options?.animate !== false && !wasVisible);
 
-  // Stage invisibly on first show so we can measure + place before the emerge
-  // animation starts — otherwise transform keyframes fight a late left/top jump.
   if (!wasVisible) {
     panel.style.visibility = 'hidden';
     panel.removeAttribute('data-animate');
     panel.setAttribute('data-visible', 'true');
   }
 
-  requestAnimationFrame(() => {
+  const apply = (): void => {
     if (!panel) return;
-    // Prefer layout size over getBoundingClientRect so an in-flight scale
-    // animation (or the hidden stage) doesn't under-report dimensions.
-    const panelW = panel.offsetWidth || 200;
-    const panelH = panel.offsetHeight || 40;
+    const panelW = panel.offsetWidth || (preferLeft ? 12 : 200);
+    const panelH = panel.offsetHeight || (preferLeft ? 12 : 40);
     const scrollX = window.scrollX || window.pageXOffset || 0;
     const scrollY = window.scrollY || window.pageYOffset || 0;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    const centerX = rect.left + rect.width / 2 - panelW / 2;
-    const wantAbove = rect.top - PANEL_OFFSET - panelH >= 8;
-    const topVp = wantAbove ? rect.top - PANEL_OFFSET - panelH : rect.bottom + PANEL_OFFSET;
-    const clampedLeft = Math.max(8, Math.min(centerX, vw - panelW - 8));
-    const clampedTop = Math.max(8, Math.min(topVp, vh - panelH - 8));
+    let clampedLeft: number;
+    let clampedTop: number;
+    let restingTransform = '';
 
-    panel.dataset.placement = wantAbove ? 'above' : 'below';
-    // Position via left/top so enter animation can own transform freely.
+    if (preferLeft) {
+      // Anchor = right edge of handle, vertical center of first selection line.
+      const anchorX = rect.left - BUBBLE_SIDE_GAP;
+      const centerY = rect.top + rect.height / 2;
+      // Keep a few px of room so translate(-100%) doesn't sit fully off-screen.
+      clampedLeft = Math.max(12, Math.min(anchorX, vw - 4));
+      clampedTop = Math.max(4, Math.min(centerY, vh - 4));
+      panel.dataset.placement = 'left';
+      restingTransform = 'translate(-100%, -50%)';
+    } else {
+      const centerX = rect.left + rect.width / 2 - panelW / 2;
+      const wantAbove = rect.top - PANEL_OFFSET - panelH >= 8;
+      const topVp = wantAbove ? rect.top - PANEL_OFFSET - panelH : rect.bottom + PANEL_OFFSET;
+      clampedLeft = Math.max(8, Math.min(centerX, vw - panelW - 8));
+      clampedTop = Math.max(8, Math.min(topVp, vh - panelH - 8));
+      panel.dataset.placement = wantAbove ? 'above' : 'below';
+      restingTransform = '';
+    }
+
     panel.style.left = `${Math.round(clampedLeft + scrollX)}px`;
     panel.style.top = `${Math.round(clampedTop + scrollY)}px`;
-    panel.style.transform = '';
+    panel.style.transform = restingTransform;
 
     if (!wasVisible) {
       panel.style.visibility = '';
-      // Reflow, then play emerge from the final seat next to the selection.
-      void panel.offsetWidth;
-      panel.setAttribute('data-animate', 'true');
-
-      const clearAnimate = (): void => {
-        panel.removeAttribute('data-animate');
-        panel.removeEventListener('animationend', clearAnimate);
-      };
-      panel.addEventListener('animationend', clearAnimate);
-      // Safety if animationend is skipped (display toggle, reduced-motion path).
-      window.setTimeout(clearAnimate, 320);
+      if (shouldAnimate) {
+        void panel.offsetWidth;
+        panel.setAttribute('data-animate', 'true');
+        const clearAnimate = (): void => {
+          panel.removeAttribute('data-animate');
+          // Restore the resting pin after the keyframe ends.
+          panel.style.transform = restingTransform;
+          panel.removeEventListener('animationend', clearAnimate);
+        };
+        panel.addEventListener('animationend', clearAnimate);
+        window.setTimeout(clearAnimate, 280);
+      }
     }
+  };
+
+  // First show: stage in rAF so we measure after display:block. Updates: apply
+  // immediately (callers already rAF-throttle) to avoid double-frame lag.
+  if (!wasVisible) {
+    requestAnimationFrame(apply);
+  } else {
+    apply();
+  }
+};
+
+/** rAF-coalesce position updates while the selection is changing rapidly. */
+const scheduleBubblePosition = (rect: DOMRect): void => {
+  if (positionRaf) return;
+  positionRaf = requestAnimationFrame(() => {
+    positionRaf = 0;
+    if (panelMode !== 'bubble' || !currentSnapshot) return;
+    positionPanel(rect, { placement: 'left', animate: false });
   });
 };
 
@@ -898,13 +1150,15 @@ const hideLangPicker = (): void => {
 
 const showLangPicker = (forAction: 'correct' | 'translate', anchorEl: HTMLElement): void => {
   if (!langPicker || !panel || !bubble) return;
+  // Keep actions visible while the picker is open (hover may leave the bubble).
+  setBubbleExpanded(true);
   activeLangAction = forAction;
   const current = forAction === 'correct' ? bubbleCorrectionLanguage : bubbleTranslationLanguage;
   renderLangPicker(current);
   langPicker.style.display = 'flex';
 
   requestAnimationFrame(() => {
-    if (!langPicker || !panel) return;
+    if (!langPicker || !panel || !bubble) return;
     const panelRect = panel.getBoundingClientRect();
     const anchorRect = anchorEl.getBoundingClientRect();
     const pickerW = langPicker.offsetWidth || 160;
@@ -918,7 +1172,10 @@ const showLangPicker = (forAction: 'correct' | 'translate', anchorEl: HTMLElemen
 
 const showBubble = (
   snapshot: SelectionSnapshot,
-  { preserveLanguages = false }: { preserveLanguages?: boolean } = {}
+  {
+    preserveLanguages = false,
+    interactive,
+  }: { preserveLanguages?: boolean; interactive?: boolean } = {},
 ): void => {
   if (!isOrtaAvailable()) {
     ortaDebug('bubble suppressed (orta not available on page)');
@@ -932,7 +1189,26 @@ const showBubble = (
   }
 
   cancelHideTimeout();
+
+  const wasVisible =
+    !!panel && panel.getAttribute('data-visible') === 'true' && panelMode === 'bubble';
+  const prevText = currentSnapshot?.text.trim() ?? '';
+  const nextText = snapshot.text.trim();
+  const isSameText = prevText === nextText;
+  // Growing/shrinking the same drag gesture (shared prefix or still mid-pointer).
+  const isLiveResize =
+    wasVisible &&
+    isPointerSelecting &&
+    (nextText.startsWith(prevText) || prevText.startsWith(nextText) || prevText.length === 0);
   currentSnapshot = snapshot;
+
+  // Lightweight path: already showing for this (or growing) selection — only move.
+  // Avoids re-render, collapse, reparent, and re-animation that caused flicker.
+  if (wasVisible && (preserveLanguages || isSameText || isLiveResize)) {
+    setPanelInteractive(interactive ?? !isPointerSelecting);
+    scheduleBubblePosition(getBubbleAnchorRect(snapshot));
+    return;
+  }
 
   if (!preserveLanguages) {
     // Seed each action with its own persisted language. Picker choices are written
@@ -941,13 +1217,21 @@ const showBubble = (
     // brief window where storage hasn't propagated yet.
     bubbleCorrectionLanguage = normalizeTargetLanguage(settings.correctionLanguage);
     bubbleTranslationLanguage = normalizeTargetLanguage(settings.targetLanguage);
+    collapseBubble();
   }
 
   renderLabels();
   renderBubbleLanguages();
   setMode('bubble');
-  positionPanel(snapshot.rect);
-  ensureRootHostIsLast();
+  setPanelInteractive(interactive ?? !isPointerSelecting);
+  positionPanel(getBubbleAnchorRect(snapshot), {
+    placement: 'left',
+    animate: !wasVisible && !isPointerSelecting,
+  });
+  // Only reparent when first appearing — moving the host every tick reflows the page.
+  if (!wasVisible) {
+    ensureRootHostIsLast();
+  }
   ortaDebug('bubble shown', {
     source: snapshot.source,
     textPreview: snapshot.text.slice(0, 40),
@@ -962,8 +1246,10 @@ const showLoading = (action: OrtaAction, rect: DOMRect): void => {
     loading.setAttribute('aria-label', label);
     loading.title = label;
   }
+  collapseBubble();
   setMode('loading');
-  positionPanel(rect);
+  // Loading chip stays near the selection (above/below) — more readable than the tiny handle.
+  positionPanel(rect, { placement: 'auto' });
 };
 
 const showResult = (action: OrtaAction, text: string, rect: DOMRect, options?: { noChanges?: boolean }): void => {
@@ -979,16 +1265,18 @@ const showResult = (action: OrtaAction, text: string, rect: DOMRect, options?: {
   if (noChangesBadge) noChangesBadge.textContent = copy.noChanges;
   if (copyLabel) copyLabel.textContent = copy.copyAction;
   if (resultCopy) resultCopy.classList.remove('is-done');
+  collapseBubble();
   setMode('result');
-  positionPanel(rect);
+  positionPanel(rect, { placement: 'auto' });
 };
 
 const showError = (message: string, rect: DOMRect): void => {
   const copy = getContentCopy();
   if (errorTitle) errorTitle.textContent = copy.updateFailed;
   if (errorText) errorText.textContent = message || copy.noResponse;
+  collapseBubble();
   setMode('error');
-  positionPanel(rect);
+  positionPanel(rect, { placement: 'auto' });
 };
 
 // ===== Transform request =====
@@ -1100,6 +1388,9 @@ const handleSelectionChange = (() => {
   let scheduled = 0;
   return (): void => {
     if (scheduled) return;
+    // During an active drag, skip the debounce so the handle tracks the
+    // selection smoothly; the update path itself is rAF-coalesced.
+    const delay = isPointerSelecting ? 0 : SELECTION_DEBOUNCE_MS;
     scheduled = window.setTimeout(() => {
       scheduled = 0;
       if (!isCurrentInstance()) return;
@@ -1113,6 +1404,13 @@ const handleSelectionChange = (() => {
         // While the language picker is open, keep the bubble even if the site
         // collapsed the page selection when focus entered our shadow UI.
         if (activeLangAction) return;
+        // mousedown usually collapses the selection before the new drag starts.
+        // Hide immediately (no delay) so a stale handle doesn't sit around and
+        // then jump — that delay dance was part of the flicker.
+        if (isPointerSelecting) {
+          if (panelMode === 'bubble') hidePanel();
+          return;
+        }
         // Selection cleared; hide bubble with a small delay so quick re-selections feel smooth.
         if (!hideTimeout) {
           hideTimeout = window.setTimeout(() => {
@@ -1130,8 +1428,11 @@ const handleSelectionChange = (() => {
       // when it's a genuinely new/different selection from the page.
       const isSameSelection =
         !!currentSnapshot && currentSnapshot.text.trim() === snapshot.text.trim();
-      showBubble(snapshot, { preserveLanguages: isSameSelection && panelMode === 'bubble' });
-    }, SELECTION_DEBOUNCE_MS);
+      showBubble(snapshot, {
+        preserveLanguages: isSameSelection && panelMode === 'bubble',
+        interactive: !isPointerSelecting,
+      });
+    }, delay);
   };
 })();
 
@@ -1236,6 +1537,44 @@ if (!SKIP_FRAME) {
     { capture: true, signal: teardownController.signal },
   );
 
+  // Track active selection gestures so the bubble never steals pointer events
+  // mid-drag (that collapsed the selection and caused whole-page flicker).
+  const onPointerSelectStart = (event: PointerEvent): void => {
+    if (isClickInsideOrtaUI(event)) return;
+    // Primary button / touch / pen only.
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    isPointerSelecting = true;
+    setPanelInteractive(false);
+  };
+
+  const onPointerSelectEnd = (event: PointerEvent): void => {
+    if (!isPointerSelecting) return;
+    // Ignore release of non-primary mouse buttons.
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    isPointerSelecting = false;
+    // Re-evaluate the settled selection and re-enable interaction.
+    handleSelectionChange();
+    // handleSelectionChange is async (timeout 0); ensure interactivity after.
+    window.setTimeout(() => {
+      if (!isPointerSelecting && panelMode === 'bubble') {
+        setPanelInteractive(true);
+      }
+    }, 0);
+  };
+
+  document.addEventListener('pointerdown', onPointerSelectStart, {
+    capture: true,
+    signal: teardownController.signal,
+  });
+  document.addEventListener('pointerup', onPointerSelectEnd, {
+    capture: true,
+    signal: teardownController.signal,
+  });
+  document.addEventListener('pointercancel', onPointerSelectEnd, {
+    capture: true,
+    signal: teardownController.signal,
+  });
+
   document.addEventListener(
     'keydown',
     (event) => {
@@ -1255,9 +1594,15 @@ if (!SKIP_FRAME) {
       const fresh = readActiveSelection();
       if (fresh) {
         currentSnapshot = fresh;
-        positionPanel(fresh.rect);
+        if (panelMode === 'bubble') {
+          positionPanel(getBubbleAnchorRect(fresh), { placement: 'left' });
+        } else {
+          positionPanel(fresh.rect, { placement: 'auto' });
+        }
+      } else if (panelMode === 'bubble') {
+        positionPanel(getBubbleAnchorRect(currentSnapshot), { placement: 'left' });
       } else {
-        positionPanel(currentSnapshot.rect);
+        positionPanel(currentSnapshot.rect, { placement: 'auto' });
       }
     },
     { capture: true, passive: true, signal: teardownController.signal },
@@ -1270,7 +1615,11 @@ if (!SKIP_FRAME) {
       const fresh = readActiveSelection();
       if (fresh) {
         currentSnapshot = fresh;
-        positionPanel(fresh.rect);
+        if (panelMode === 'bubble') {
+          positionPanel(getBubbleAnchorRect(fresh), { placement: 'left' });
+        } else {
+          positionPanel(fresh.rect, { placement: 'auto' });
+        }
       }
     },
     { passive: true, signal: teardownController.signal },
@@ -1337,11 +1686,27 @@ const bindBubbleAction = (
 bindBubbleAction(correctBtn, 'correct');
 bindBubbleAction(translateBtn, 'translate');
 
+// Tiny handle: hover expands actions (CSS); touch/click toggles for devices without hover.
+// Handle is pinned via transform to the selection edge — expand grows left, no re-anchor.
+if (bubbleHandle && bubble) {
+  // Prevent focus moving into the handle from collapsing the page selection.
+  bubbleHandle.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+  });
+
+  bubbleHandle.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const next = bubble.dataset.expanded !== 'true';
+    setBubbleExpanded(next);
+  });
+}
+
 // Dismiss open language picker on clicks elsewhere in the panel (keeps it non-intrusive)
 panel?.addEventListener('click', (event) => {
   if (!langPicker || langPicker.style.display === 'none') return;
   const target = event.target as Node | null;
-  if (target && !langPicker.contains(target)) {
+  if (target && !langPicker.contains(target) && target !== bubbleHandle) {
     hideLangPicker();
   }
 });
