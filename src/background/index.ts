@@ -143,8 +143,13 @@ chrome.runtime.onMessage.addListener((message: OrtaMessage, sender, sendResponse
   }
 
   if (message.type === 'orta:validateGatewayKey') {
-    // Only extension pages (the options page) may validate keys; never content scripts.
-    if (sender.tab) return false;
+    // Only extension pages (the options page) may validate keys; never content
+    // scripts. The options page runs in a tab, so check the sender's origin
+    // rather than `sender.tab`.
+    if (!sender.url?.startsWith(chrome.runtime.getURL(''))) {
+      sendResponse({ ok: false, error: 'forbidden' });
+      return false;
+    }
 
     void (async () => {
       const settings = await getSettings();
