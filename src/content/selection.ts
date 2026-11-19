@@ -258,12 +258,49 @@ const padLikeOriginal = (raw: string, text: string): string => {
   return `${leading}${text}${trailing}`;
 };
 
+/** Whitespace-insensitive compare: Range#toString drops the line breaks between blocks. */
+const sameText = (a: string, b: string): boolean => a.replace(/\s+/g, '') === b.replace(/\s+/g, '');
+
+const nextFrame = (): Promise<void> =>
+  new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+
+const isSameRange = (a: Range, b: Range): boolean =>
+  a.compareBoundaryPoints(Range.START_TO_START, b) === 0 && a.compareBoundaryPoints(Range.END_TO_END, b) === 0;
+
 /**
- * Writes `text` over the original selection using `insertText`, so the page's
- * editor sees a normal input event and the change can be undone with Cmd/Ctrl+Z.
- * Returns false when the original text is gone (the page changed meanwhile).
+ * Rich editors (Draft.js on X, Lexical, ProseMirror, Slate, Quill, Gmail) keep
+ * their own document model. Text written straight into their DOM desyncs it:
+ * the editor stops responding to the next keystroke. A paste event is the
+ * one input every one of them handles through its own model, so offer the
+ * text as a paste first. Returns true when the editor took it.
  */
-export const replaceTarget = (target: SelectionTarget, text: string): boolean => {
+const pasteIntoEditor = (target: Node, text: string): boolean => {
+  try {
+    const data = new DataTransfer();
+    data.setData('text/plain', text);
+    const event = new ClipboardEvent('paste', {
+      clipboardData: data,
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    });
+    const element = target instanceof Element ? target : target.parentElement;
+    if (!element) return false;
+    element.dispatchEvent(event);
+    return event.defaultPrevented;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Writes `text` over the original selection so the page's editor sees a normal
+ * edit and the change can be undone with Cmd/Ctrl+Z. Fields use `insertText`;
+ * contenteditable editors get a paste they apply through their own model, and
+ * plain contenteditable falls back to `insertText`.
+ * Resolves false when the original text is gone (the page changed meanwhile).
+ */
+export const replaceTarget = async (target: SelectionTarget, text: string): Promise<boolean> => {
   if (!canReplace(target)) return false;
   const replacement = padLikeOriginal(target.raw, text);
 
@@ -289,12 +326,19 @@ export const replaceTarget = (target: SelectionTarget, text: string): boolean =>
   }
 
   const root = getEditableRoot(target.range);
-  if (!root || target.range.toString() !== target.raw) return false;
+  if (!root || !sameText(target.range.toString(), target.raw)) return false;
 
   root.focus({ preventScroll: true });
   const selection = window.getSelection();
   if (!selection) return false;
-  selection.removeAllRanges();
-  selection.addRange(target.range);
+  const current = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+  if (!current || !isSameRange(current, target.range)) {
+    selection.removeAllRanges();
+    selection.addRange(target.range);
+    // Let the editor see the selectionchange and sync its own selection model.
+    await nextFrame();
+  }
+
+  if (pasteIntoEditor(target.range.startContainer, replacement)) return true;
   return document.execCommand('insertText', false, replacement);
 };

@@ -716,7 +716,7 @@ const runAction = (action: OrtaAction): void => {
   // Fix the card width up front so streamed text never makes it (and its
   // buttons) jump sideways. Wider selections get a wider card.
   const selectionWidth = measureTarget(requestTarget)?.bounds.width ?? 0;
-  card.style.width = `${Math.round(clamp(selectionWidth, 340, Math.min(420, window.innerWidth - 2 * VIEWPORT_MARGIN)))}px`;
+  card.style.width = `${Math.round(clamp(selectionWidth, 400, Math.min(460, window.innerWidth - 2 * VIEWPORT_MARGIN)))}px`;
 
   setMode('working');
   renderWorking(action);
@@ -821,10 +821,11 @@ const copyResult = async (): Promise<void> => {
   flashDone(copyButton, c.copyDone, c.copyAction);
 };
 
-const replaceResult = (): void => {
+const replaceResult = async (): Promise<void> => {
   if (!target || !resultText) return;
   const c = copy();
-  const replaced = replaceTarget(target, resultText);
+  replaceButton.disabled = true;
+  const replaced = await replaceTarget(target, resultText);
   if (!replaced) {
     replaceButton.disabled = true;
     setButtonLabel(replaceButton, c.replaceFailed);
@@ -845,7 +846,7 @@ panel.addEventListener('pointerdown', (event) => {
 });
 
 copyButton.addEventListener('click', () => void copyResult());
-replaceButton.addEventListener('click', replaceResult);
+replaceButton.addEventListener('click', () => void replaceResult());
 retryButton.addEventListener('click', () => runAction(activeAction));
 cancelButton.addEventListener('click', hideAll);
 cardClose.addEventListener('click', hideAll);

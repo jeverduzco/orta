@@ -334,7 +334,7 @@ export const CONTENT_STYLES = `
     flex-direction: column;
     gap: 8px;
     max-width: calc(100vw - 16px);
-    min-width: min(340px, calc(100vw - 16px));
+    min-width: min(400px, calc(100vw - 16px));
     padding: 10px 10px 10px 12px;
     width: max-content;
   }

@@ -2,7 +2,7 @@
 
 ## Principles
 
-Orta is a selection tool: the user highlights any text on the page and Orta offers to correct or translate it. It never rewrites read-only content. In editable fields the user can opt in to **Replace**, which goes through the browser's native `insertText` command so the host editor (and its undo stack) handles the change like a normal edit; otherwise the result is copied.
+Orta is a selection tool: the user highlights any text on the page and Orta offers to correct or translate it. It never rewrites read-only content. In editable fields the user can opt in to **Replace**. Inputs and textareas use the native `insertText` command. In contenteditable, Orta first offers the text as a synthetic `paste` event: rich editors (Draft.js on X, Lexical, ProseMirror, Slate, Quill, Gmail) apply it through their own document model, which keeps them in sync — writing into their DOM directly desyncs the model and the editor stops responding to the next keystroke. A plain contenteditable that ignores the paste falls back to `insertText`. Either way the edit can be undone.
 
 ## Experience
 
