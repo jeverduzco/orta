@@ -13,7 +13,7 @@ const shared = {
   build: {
     outDir: 'dist',
     sourcemap: true,
-    minify: 'esbuild',
+    minify: true,
     target: 'es2022',
   },
 };

@@ -4,5 +4,11 @@
   },
   "extensionDescription": {
     "message": "Corrige y traduce el texto seleccionado en cualquier página vía Vercel AI Gateway."
+  },
+  "commandCorrect": {
+    "message": "Corregir el texto seleccionado"
+  },
+  "commandTranslate": {
+    "message": "Traducir el texto seleccionado"
   }
 }

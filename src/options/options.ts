@@ -13,6 +13,7 @@ import { getCopy } from '../shared/i18n';
 import {
   getPublicSettings,
   getSecretSettings,
+  normalizeModelId,
   setPublicSettings,
   setSecretSettings,
   type PublicOrtaSettings,
@@ -102,6 +103,14 @@ const applyOptionsLanguage = (language: string): void => {
     }
   });
 
+  document.querySelectorAll<HTMLElement>('[data-i18n-aria]').forEach((element) => {
+    const key = element.dataset.i18nAria as keyof typeof copy | undefined;
+
+    if (key && copy[key]) {
+      element.setAttribute('aria-label', copy[key]);
+    }
+  });
+
   syncKeyVisibilityButton();
   renderLanguageOptions(appLanguage);
   // renderLanguageOptions rebuilds <option>s, which wipes the select value;
@@ -111,9 +120,6 @@ const applyOptionsLanguage = (language: string): void => {
     targetLanguageInput.value = normalizeTargetLanguage(publicSettings.targetLanguage);
     correctionLanguageInput.value = normalizeTargetLanguage(publicSettings.correctionLanguage);
   }
-  targetLanguageInput.setAttribute('aria-label', copy.translationLanguageLabel);
-  correctionLanguageInput.setAttribute('aria-label', copy.correctionLanguageLabel);
-  appLanguageInput.setAttribute('aria-label', copy.appLanguageLabel);
 };
 
 const showToast = (message: string): void => {
@@ -285,7 +291,7 @@ const renderSettings = (settings: PublicOrtaSettings, apiKey: string): void => {
   applyOptionsLanguage(settings.appLanguage);
   targetLanguageInput.value = normalizeTargetLanguage(settings.targetLanguage);
   correctionLanguageInput.value = normalizeTargetLanguage(settings.correctionLanguage);
-  modelSelect.value = settings.model ?? DEFAULT_MODEL_ID;
+  modelSelect.value = normalizeModelId(settings.model);
 
   refreshApiStatusFromKey(apiKey);
   renderBlockedSites();
@@ -340,7 +346,10 @@ testKeyButton.addEventListener('click', async () => {
 
   setApiStatus(copy.apiStatusLoading, 'loading');
   const modelForTest = modelSelect.value || DEFAULT_MODEL_ID;
-  const response = await sendValidateGatewayKey(apiKey, modelForTest);
+  testKeyButton.disabled = true;
+  const response = await sendValidateGatewayKey(apiKey, modelForTest).finally(() => {
+    testKeyButton.disabled = false;
+  });
 
   if (response.ok) {
     setApiStatus(copy.apiStatusReady, 'valid');

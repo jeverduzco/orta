@@ -2,47 +2,53 @@
 
 ## Principles
 
-Orta is a selection tool: the user highlights any text on the page and Orta offers to correct or translate it. It does not inject into editable fields, does not compete with rich editors, and does not rewrite the host site's DOM. The result is delivered as plain text the user copies and pastes wherever they want.
+Orta is a selection tool: the user highlights any text on the page and Orta offers to correct or translate it. It never rewrites read-only content. In editable fields the user can opt in to **Replace**, which goes through the browser's native `insertText` command so the host editor (and its undo stack) handles the change like a normal edit; otherwise the result is copied.
 
 ## Experience
 
-- When the user selects text (with mouse, touch, or keyboard) on any page, Orta shows a **tiny handle** (a small purple dot) parked to the **left of the selection** (first line when multi-line). It follows the selection on scroll/resize.
-- Hovering the handle (or tapping it on touch) expands a compact action chip with **Correct** and **Translate**. Actions grow leftward so they do not cover the highlighted text. Long-press still opens the per-action language picker.
-- Loading and result panels still place themselves above or below the selection for readability.
-- When an action is pressed, the UI morphs into a spinner and then into a panel with the result.
-- The result panel shows the processed text (selectable) and a **Copy** button. The user pastes the result wherever they need it.
+- When the user selects text (with mouse, touch, or keyboard) on any page, Orta shows a **22 px handle** with the Orta sparkle, docked to the **left of the selection's first line**. If there is no room on the left it docks above the line and the actions grow to the right. In inputs and textareas the position is measured with a mirror element, so it tracks the selected line rather than the whole field. It follows the selection on scroll/resize.
+- Hovering the handle (or tapping it on touch) expands a compact chip with **Correct** and **Translate**, each followed by a visible language code (e.g. `ES`, `EN`). Clicking the code opens a language list with full names (keyboard: arrows, Home/End, Enter, Esc); long-press on the action still works.
+- When an action is pressed, a card opens above or below the selection (whichever has room; its width is fixed up front so nothing jumps). The text streams in as the model writes it, with a **Cancel** button.
+- The result card shows the text (selectable), a word-level diff for corrections (toggleable), **Retry**, **Copy**, and **Replace** when the selection is editable. Errors explain what failed and offer **Retry** for transient failures or **Open settings** for key/model problems.
+- The UI lives in a closed shadow root inside a manual popover, so it renders in the top layer above any page stacking context.
 - Translation uses a closed list of languages to avoid typos in the target language.
 - The Orta UI language is independent of the translation target language.
 - Correction and translation each have their own target language. The bubble exposes a per-action language chip; changing it persists the choice to settings, so it survives the next selection and page reloads (it does not reset to a single global default).
 - The popup lets the user turn Orta off globally or just for the current domain.
-- The options page concentrates the API key, global toggles, separate correction and translation target languages, AI model selection (Flash, Minimax, Grok, DeepSeek via Vercel AI Gateway), exclusions, and a list of domains blocked by default for safety (banks, payments, SSO, government).
+- The options page concentrates the API key, global toggles, separate correction and translation target languages, AI model selection (Muse Ember, Flash, Minimax, DeepSeek via Vercel AI Gateway), exclusions, and a list of domains blocked by default for safety (banks, payments, SSO, government).
 - On pages flagged as sensitive (login/checkout-like URL paths, visible password fields, default-blocked domains), the bubble does not appear.
-- **AI model selection** is available in the Options page. Users can switch between `google/gemini-3.5-flash` (default), `minimax/minimax-m3`, `xai/grok-4.5`, and `deepseek/deepseek-v4-flash`. The choice is persisted in `chrome.storage.sync` and used for both correction/translation requests and API key validation against the gateway.
+- **AI model selection** is available in the Options page. Users can switch between `meta/muse-ember` (default), `google/gemini-3.5-flash`, `minimax/minimax-m3`, and `deepseek/deepseek-v4-flash`. The choice is persisted in `chrome.storage.sync`; retired ids (such as the xAI Grok models the gateway no longer serves) migrate to the default.
 
 ## MV3 architecture
 
 ```text
-content script  ─chrome.runtime.sendMessage─▶  background service worker  ─fetch─▶  Vercel AI Gateway
+content script  ─chrome.runtime.connect (port)─▶  background service worker  ─fetch (SSE)─▶  Vercel AI Gateway
+               ◀─ delta / done / error ──────
 ```
 
 - The content script never calls the provider directly.
-- The service worker validates settings (including the user-selected AI model), blocked sites, and the API key before sending text to the configured model.
-- `chrome.storage.local` holds the API key (so secrets are not synced across browsers).
+- Each transform uses its own port. The service worker streams `delta` messages (throttled to one every 50 ms), then `done` or a typed `error` (`auth`, `rateLimited`, `timeout`, `modelUnavailable`, …). Closing the port aborts the upstream `fetch`.
+- The service worker re-checks everything the content script checks (global/feature toggles, user and built-in blocked domains, login/checkout paths for both the tab and frame URL), plus an 8,000-character limit, before sending text to the model.
+- Requests time out after 20 s without data and 90 s overall; 429/5xx and network failures are retried once (honouring short `Retry-After`).
+- Key validation calls `/v1/credits` (authenticated) and `/v1/models/{provider}/{model}` (public, existence only).
+- `chrome.storage.local` holds the API key (so secrets are not synced across browsers). Content scripts only ever request `disabledSites` from it.
 - `chrome.storage.sync` holds preferences and excluded sites.
 - `host_permissions` is restricted to `https://ai-gateway.vercel.sh/*`.
 - The content script is declared on `<all_urls>` because the main feature must work on any page.
 
 ## Selection detection
 
-Three signals feed the selection pipeline, in order of cost:
+Signals feed the selection pipeline, in order of preference:
 
-1. The standard `selectionchange` event on `document`.
-2. A 250 ms polling fallback that compares the serialized selection text. Some sites (notably LinkedIn) suppress `selectionchange` at the document level.
-3. `pointerup`, `mouseup`, and `keyup` (only on selection-relevant keys) so the bubble updates immediately on user gestures even if the events above are delayed.
+1. `selectionchange`, listened to in the **capture phase on `window`**. That listener runs before any page listener on `document`, so sites that call `stopImmediatePropagation` there (notably LinkedIn) can't hide it.
+2. `pointerup`, `pointercancel`, and `keyup` (only selection-relevant keys) so the bubble reacts immediately to gestures.
+3. A 400 ms poll of a cheap selection fingerprint, as a last resort. It only runs while the tab is visible and focused, and stops for good once a native `selectionchange` has been observed in the frame.
 
-Whichever fires first wins; the read is debounced (90 ms) to avoid flicker.
+Reads are debounced (90 ms, 0 ms mid-drag) and repositioning is coalesced with `requestAnimationFrame`.
 
 ## Prompts
+
+The selected text is sent wrapped in `<orta_text>…</orta_text>` and the system prompt states that everything inside the tags is data, never instructions; a literal closing tag inside the selection is defused first. Wrappers the model echoes back (tags, code fences) are stripped, including half-received ones while streaming.
 
 **Correction**
 

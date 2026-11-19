@@ -316,3 +316,21 @@ input:focus-visible {
   outline: 2px solid rgba(167, 139, 250, 0.6);
   outline-offset: 2px;
 }
+
+/* Site status: make blocked states readable at a glance. */
+#site-status[data-state="userBlocked"],
+#site-status[data-state="safetyBlocked"],
+#site-status[data-state="protectedPage"] {
+  color: var(--text-muted);
+}
+
+#site-status[data-state="safetyBlocked"]::before,
+#site-status[data-state="userBlocked"]::before {
+  content: "● ";
+  color: #f59e0b;
+}
+
+#site-status[data-state="active"]::before {
+  content: "● ";
+  color: #22c55e;
+}

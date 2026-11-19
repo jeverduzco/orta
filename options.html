@@ -26,12 +26,12 @@
         </p>
       </section>
 
-      <section class="settings-grid" aria-label="Configuracion de Orta">
+      <section class="settings-grid" aria-label="Configuración de Orta" data-i18n-aria="settingsSectionLabel">
         <form class="panel api-panel" id="api-form">
           <div class="panel-heading">
             <div>
               <p class="section-kicker">Vercel AI Gateway</p>
-              <h2 data-i18n="connectionTitle">Conexion</h2>
+              <h2 data-i18n="connectionTitle">Conexión</h2>
             </div>
             <span class="status-pill" id="api-status">Sin validar</span>
           </div>
@@ -82,12 +82,12 @@
 
           <label class="field" for="model">
             <span data-i18n="modelLabel">Modelo de IA</span>
-            <select id="model" aria-label="Modelo de IA"></select>
+            <select id="model"></select>
           </label>
 
           <div class="form-actions">
             <button class="primary-button" type="submit" data-i18n="saveButton">Guardar</button>
-            <button class="secondary-button" id="test-key" type="button" data-i18n="testConnectionButton">Probar conexion</button>
+            <button class="secondary-button" id="test-key" type="button" data-i18n="testConnectionButton">Probar conexión</button>
           </div>
         </form>
 
@@ -103,14 +103,14 @@
             <label class="toggle-row">
               <span>
                 <strong data-i18n="enableTitle">Activar Orta</strong>
-                <small data-i18n="enableDescription">Muestra el icono sutil en campos editables.</small>
+                <small data-i18n="enableDescription">Muestra una burbuja al seleccionar texto en cualquier página.</small>
               </span>
               <input id="enabled" type="checkbox" role="switch" />
             </label>
 
             <label class="toggle-row">
               <span>
-                <strong data-i18n="correctionTitle">Correccion ortografica</strong>
+                <strong data-i18n="correctionTitle">Corrección ortográfica</strong>
                 <small data-i18n="correctionDescription">Reescribe conservando idioma, tono y formato.</small>
               </span>
               <input id="correction-enabled" type="checkbox" role="switch" />
@@ -118,8 +118,8 @@
 
             <label class="toggle-row">
               <span>
-                <strong data-i18n="translationTitle">Traduccion</strong>
-                <small data-i18n="translationDescription">Traduce el texto del campo al idioma destino.</small>
+                <strong data-i18n="translationTitle">Traducción</strong>
+                <small data-i18n="translationDescription">Traduce el texto seleccionado al idioma destino.</small>
               </span>
               <input id="translation-enabled" type="checkbox" role="switch" />
             </label>
@@ -127,17 +127,17 @@
 
           <label class="field compact" for="app-language">
             <span data-i18n="appLanguageLabel">Idioma de Orta</span>
-            <select id="app-language" aria-label="Idioma de Orta"></select>
+            <select id="app-language"></select>
           </label>
 
           <label class="field compact" for="correction-language">
-            <span data-i18n="correctionLanguageLabel">Idioma de correccion</span>
-            <select id="correction-language" aria-label="Idioma para correccion"></select>
+            <span data-i18n="correctionLanguageLabel">Idioma de corrección</span>
+            <select id="correction-language"></select>
           </label>
 
           <label class="field compact" for="target-language">
-            <span data-i18n="translationLanguageLabel">Idioma de traduccion</span>
-            <select id="target-language" aria-label="Idioma destino para traduccion"></select>
+            <span data-i18n="translationLanguageLabel">Idioma de traducción</span>
+            <select id="target-language"></select>
           </label>
         </section>
 

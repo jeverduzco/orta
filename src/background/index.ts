@@ -1,217 +1,121 @@
 import {
-  AI_GATEWAY_BASE_URL,
   CONTENT_SCRIPT_COMMAND_TYPE,
-  DEFAULT_MODEL_ID,
+  MAX_SELECTION_CHARS,
+  TRANSFORM_PORT_NAME,
   type ContentScriptCommand,
   type OrtaAction,
   type OrtaMessage,
+  type TransformErrorCode,
+  type TransformPortMessage,
+  type TransformStart,
+  type ValidateGatewayResponse,
 } from '../shared/messages';
-import { getSettings } from '../shared/settings';
-import { isUrlBlocked } from '../shared/sites';
+import { getSettings, normalizeModelId, type OrtaSettings } from '../shared/settings';
+import { isOrtaAvailableForUrl } from '../shared/sites';
+import { isAuthLikePath } from '../shared/pageGuard';
 import { getCopy, type CopyDictionary } from '../shared/i18n';
-import {
-  getTargetLanguageNativeName,
-  normalizeTargetLanguage,
-} from '../shared/languages';
+import { buildMessages, GatewayError, streamCompletion, validateGatewayKey } from './gateway';
+import { errorMessageFor } from './errors';
 
-type GatewayMessage = {
-  role: 'system' | 'user';
-  content: string;
-};
+/** Minimum gap between streamed updates sent to the page (keeps IPC cheap). */
+const DELTA_THROTTLE_MS = 50;
 
-type GatewayCompletion = {
-  choices?: Array<{
-    message?: {
-      content?: string;
-    };
-  }>;
-  usage?: {
-    prompt_tokens?: number;
-    completion_tokens?: number;
-    total_tokens?: number;
-  };
-  error?: {
-    message?: string;
-    code?: string;
-  };
-};
+/** Mirrors the content script's checks so a page can never bypass them. */
+const getBlockReason = (
+  settings: OrtaSettings,
+  action: OrtaAction,
+  urls: string[],
+  copy: CopyDictionary,
+): string | null => {
+  if (!settings.enabled) return copy.ortaDisabled;
+  if (action === 'correct' && !settings.correctionEnabled) return copy.correctionDisabled;
+  if (action === 'translate' && !settings.translationEnabled) return copy.translationDisabled;
 
-const FETCH_TIMEOUT_MS = 20_000;
-const RETRY_DELAY_MS = 1_000;
-
-const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
-
-const getErrorMessage = (status: number, fallback: string, copy: CopyDictionary): string => {
-  if (status === 401 || status === 403) {
-    return copy.gatewayAuthFailed;
+  for (const url of urls) {
+    if (!url) continue;
+    if (!isOrtaAvailableForUrl(url, settings) || isAuthLikePath(url)) return copy.siteDisabled;
   }
 
-  if (status === 429) {
-    return copy.gatewayRateLimited;
-  }
-
-  if (status >= 500) {
-    return copy.gatewayServerFailed;
-  }
-
-  return fallback;
+  return null;
 };
 
-const cleanModelOutput = (value: string): string => {
-  const trimmedValue = value.trim();
-  const fencedMatch = trimmedValue.match(/^```(?:text)?\s*([\s\S]*?)\s*```$/i);
-
-  return fencedMatch?.[1]?.trim() ?? trimmedValue;
-};
-
-const buildMessages = (action: OrtaAction, text: string, targetLanguage: string, sourceLanguage?: string): GatewayMessage[] => {
-  const baseInstruction =
-    "You are Orta, a writing assistant that operates on the user's selected text. Return ONLY the final text, with no quotes, no markdown, and no explanations. Preserve line breaks, URLs, placeholders, mentions, numbers, code, and the original meaning. Do not change the language unless the instruction below tells you to translate.";
-
-  if (action === 'correct') {
-    let langHint = '';
-    if (sourceLanguage) {
-      const langName = getTargetLanguageNativeName(normalizeTargetLanguage(sourceLanguage));
-      langHint = `The text is written in ${langName}. `;
-    }
-    return [
-      {
-        role: 'system',
-        content: `${langHint}${baseInstruction} Fix spelling, accents, punctuation, light grammar issues and obvious typos (duplicated or missing letters). Do not change the language, tone or intent. If the text is already correct, return it exactly as received.`,
-      },
-      {
-        role: 'user',
-        content: text,
-      },
-    ];
-  }
-
-  const languageName = getTargetLanguageNativeName(normalizeTargetLanguage(targetLanguage));
-
-  return [
-    {
-      role: 'system',
-      content: `${baseInstruction} Translate the user text to ${languageName}. Keep proper nouns, variable names, technical tags and code fragments untranslated when appropriate.`,
-    },
-    {
-      role: 'user',
-      content: text,
-    },
-  ];
-};
-
-const fetchWithTimeout = async (
-  url: string,
-  init: RequestInit,
-  timeoutMs: number,
-): Promise<Response> => {
+const handleTransformPort = (port: chrome.runtime.Port): void => {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...init, signal: controller.signal });
-  } finally {
-    clearTimeout(timeout);
-  }
-};
+  let disconnected = false;
 
-const requestGatewayText = async ({
-  apiKey,
-  action,
-  text,
-  targetLanguage,
-  sourceLanguage,
-  appLanguage,
-  model,
-}: {
-  apiKey: string;
-  action: OrtaAction;
-  text: string;
-  targetLanguage: string;
-  sourceLanguage?: string;
-  appLanguage: string;
-  model?: string;
-}): Promise<{
-  text: string;
-  usage?: {
-    promptTokens?: number;
-    completionTokens?: number;
-    totalTokens?: number;
-  };
-}> => {
-  const copy = getCopy(appLanguage);
-  const effectiveModel = model || DEFAULT_MODEL_ID;
-  const body = JSON.stringify({
-    model: effectiveModel,
-    messages: buildMessages(action, text, targetLanguage, sourceLanguage),
-    temperature: action === 'correct' ? 0 : 0.1,
+  port.onDisconnect.addListener(() => {
+    disconnected = true;
+    controller.abort();
   });
 
-  const attemptOnce = async (): Promise<Response> => {
+  const post = (message: TransformPortMessage): void => {
+    if (disconnected) return;
     try {
-      return await fetchWithTimeout(
-        `${AI_GATEWAY_BASE_URL}/chat/completions`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body,
-        },
-        FETCH_TIMEOUT_MS,
-      );
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new Error(copy.gatewayTimeout);
-      }
-      throw new Error(copy.gatewayContactFailed);
+      port.postMessage(message);
+    } catch {
+      disconnected = true;
     }
   };
 
-  let response = await attemptOnce();
+  port.onMessage.addListener(async (message: TransformStart) => {
+    if (message?.type !== 'start') return;
 
-  if (!response.ok && (response.status === 429 || response.status >= 500)) {
-    await sleep(RETRY_DELAY_MS);
-    response = await attemptOnce();
-  }
+    const settings = await getSettings();
+    const copy = getCopy(settings.appLanguage);
+    const fail = (code: TransformErrorCode, detail?: string) =>
+      post({ type: 'error', code, error: errorMessageFor(code, copy, detail) });
 
-  const payload = (await response.json().catch(() => ({}))) as GatewayCompletion;
+    const urls = [port.sender?.tab?.url ?? '', port.sender?.url ?? ''];
+    const blockReason = getBlockReason(settings, message.action, urls, copy);
+    if (blockReason) return fail('disabled', blockReason);
 
-  if (!response.ok) {
-    const fallback = payload.error?.message ?? copy.transformFailed;
-    throw new Error(getErrorMessage(response.status, fallback, copy));
-  }
+    const text = typeof message.text === 'string' ? message.text : '';
+    if (!text.trim()) return fail('empty');
+    if (text.length > MAX_SELECTION_CHARS) return fail('tooLong');
 
-  const content = payload.choices?.[0]?.message?.content;
+    const apiKey = settings.apiKey.trim();
+    if (!apiKey) return fail('apiKeyMissing');
 
-  if (!content) {
-    throw new Error(copy.noModelOutput);
-  }
+    let lastSent = 0;
+    let pending: string | null = null;
+    let flushTimer: ReturnType<typeof setTimeout> | undefined;
+    const flush = () => {
+      flushTimer = undefined;
+      if (pending === null) return;
+      post({ type: 'delta', text: pending });
+      pending = null;
+      lastSent = Date.now();
+    };
 
-  return {
-    text: cleanModelOutput(content),
-    usage: {
-      promptTokens: payload.usage?.prompt_tokens,
-      completionTokens: payload.usage?.completion_tokens,
-      totalTokens: payload.usage?.total_tokens,
-    },
-  };
-};
-
-const validateGatewayKey = async (apiKey: string, modelId?: string): Promise<boolean> => {
-  const model = modelId || DEFAULT_MODEL_ID;
-  const response = await fetchWithTimeout(
-    `${AI_GATEWAY_BASE_URL}/models/${encodeURIComponent(model)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-    },
-    FETCH_TIMEOUT_MS,
-  );
-
-  return response.ok;
+    try {
+      const result = await streamCompletion({
+        apiKey,
+        model: normalizeModelId(settings.model),
+        messages: buildMessages(
+          message.action,
+          text,
+          message.targetLanguage || settings.targetLanguage,
+          message.sourceLanguage || settings.correctionLanguage,
+        ),
+        temperature: message.action === 'correct' ? 0 : 0.1,
+        signal: controller.signal,
+        onText: (partial) => {
+          pending = partial;
+          const wait = DELTA_THROTTLE_MS - (Date.now() - lastSent);
+          if (wait <= 0) flush();
+          else flushTimer ??= setTimeout(flush, wait);
+        },
+      });
+      clearTimeout(flushTimer);
+      post({ type: 'done', text: result.text, usage: result.usage });
+    } catch (error) {
+      clearTimeout(flushTimer);
+      if (controller.signal.aborted && disconnected) return; // user cancelled
+      const gatewayError = error instanceof GatewayError ? error : new GatewayError('unknown');
+      // Only surface the gateway's own wording for errors we have no copy for.
+      fail(gatewayError.code, gatewayError.code === 'unknown' ? undefined : gatewayError.message);
+    }
+  });
 };
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -220,96 +124,48 @@ chrome.runtime.onInstalled.addListener((details) => {
   }
 });
 
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== TRANSFORM_PORT_NAME || port.sender?.id !== chrome.runtime.id) {
+    port.disconnect();
+    return;
+  }
+  handleTransformPort(port);
+});
+
 chrome.runtime.onMessage.addListener((message: OrtaMessage, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) {
     return false;
   }
 
+  if (message.type === 'orta:openOptions') {
+    void chrome.runtime.openOptionsPage();
+    return false;
+  }
+
   if (message.type === 'orta:validateGatewayKey') {
+    // Only extension pages (the options page) may validate keys; never content scripts.
+    if (sender.tab) return false;
+
     void (async () => {
       const settings = await getSettings();
       const copy = getCopy(settings.appLanguage);
       const apiKey = message.apiKey?.trim() || settings.apiKey.trim();
-      const modelToValidate = message.model || settings.model || DEFAULT_MODEL_ID;
+      const model = normalizeModelId(message.model || settings.model);
+      const respond = (response: ValidateGatewayResponse) => sendResponse(response);
 
       if (!apiKey) {
-        sendResponse({ ok: false, error: copy.keyRequired });
+        respond({ ok: false, error: copy.keyRequired });
         return;
       }
 
       try {
-        const isValid = await validateGatewayKey(apiKey, modelToValidate);
-        sendResponse(
-          isValid
-            ? { ok: true, model: modelToValidate }
-            : { ok: false, error: copy.gatewayInvalid },
-        );
+        const result = await validateGatewayKey(apiKey, model);
+        if (result === 'ok') respond({ ok: true, model });
+        else if (result === 'invalidKey') respond({ ok: false, error: copy.gatewayAuthFailed });
+        else respond({ ok: false, error: copy.gatewayModelUnavailable });
       } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          sendResponse({ ok: false, error: copy.gatewayTimeout });
-          return;
-        }
-        sendResponse({ ok: false, error: copy.gatewayContactFailed });
-      }
-    })();
-
-    return true;
-  }
-
-  if (message.type === 'orta:transform') {
-    void (async () => {
-      const settings = await getSettings();
-      const copy = getCopy(settings.appLanguage);
-      const apiKey = settings.apiKey.trim();
-      const pageUrl = sender.tab?.url ?? '';
-
-      if (!settings.enabled) {
-        sendResponse({ ok: false, error: copy.ortaDisabled });
-        return;
-      }
-
-      if (pageUrl && isUrlBlocked(pageUrl, settings.disabledSites)) {
-        sendResponse({ ok: false, error: copy.siteDisabled });
-        return;
-      }
-
-      if (message.action === 'correct' && !settings.correctionEnabled) {
-        sendResponse({ ok: false, error: copy.correctionDisabled });
-        return;
-      }
-
-      if (message.action === 'translate' && !settings.translationEnabled) {
-        sendResponse({ ok: false, error: copy.translationDisabled });
-        return;
-      }
-
-      if (!apiKey) {
-        sendResponse({ ok: false, error: copy.apiKeyMissing });
-        return;
-      }
-
-      if (!message.text.trim()) {
-        sendResponse({ ok: false, error: copy.noText });
-        return;
-      }
-
-      try {
-        const result = await requestGatewayText({
-          apiKey,
-          action: message.action,
-          text: message.text,
-          targetLanguage: message.targetLanguage || settings.targetLanguage,
-          sourceLanguage: message.sourceLanguage || settings.correctionLanguage,
-          appLanguage: settings.appLanguage,
-          model: settings.model,
-        });
-
-        sendResponse({ ok: true, ...result });
-      } catch (error) {
-        sendResponse({
-          ok: false,
-          error: error instanceof Error ? error.message : copy.transformFailed,
-        });
+        const code = error instanceof GatewayError ? error.code : 'network';
+        respond({ ok: false, error: errorMessageFor(code, copy) });
       }
     })();
 

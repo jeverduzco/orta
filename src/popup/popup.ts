@@ -1,6 +1,13 @@
 import { getPublicSettings, setPublicSettings, type PublicOrtaSettings } from '../shared/settings';
 import { getCopy } from '../shared/i18n';
-import { getHostnameFromUrl, isHostnameBlocked, normalizeSitePattern } from '../shared/sites';
+import {
+  getHostnameFromUrl,
+  isHostnameBlocked,
+  isHostnameBlockedByBuiltin,
+  isOrtaAvailableForUrl,
+  normalizeSitePattern,
+} from '../shared/sites';
+import { isAuthLikePath } from '../shared/pageGuard';
 import './popup.css';
 
 const getElement = <T extends HTMLElement>(selector: string): T => {
@@ -22,6 +29,7 @@ const openOptionsButton = getElement<HTMLButtonElement>('#open-options');
 
 let settings: PublicOrtaSettings | null = null;
 let activeHostname = '';
+let activeUrl = '';
 
 const getActiveTabUrl = async (): Promise<string> =>
   new Promise((resolve) => {
@@ -44,26 +52,48 @@ const updatePublicSetting = async (values: Partial<PublicOrtaSettings>): Promise
   renderState();
 };
 
+type SiteState = 'unavailable' | 'userBlocked' | 'safetyBlocked' | 'protectedPage' | 'active';
+
+const getSiteState = (current: PublicOrtaSettings): SiteState => {
+  if (!activeHostname || !/^https?:/i.test(activeUrl)) return 'unavailable';
+  if (isHostnameBlocked(activeHostname, current.disabledSites)) return 'userBlocked';
+  if (isHostnameBlockedByBuiltin(activeHostname) && !isOrtaAvailableForUrl(activeUrl, { ...current, enabled: true, correctionEnabled: true })) {
+    return 'safetyBlocked';
+  }
+  if (isAuthLikePath(activeUrl)) return 'protectedPage';
+  return 'active';
+};
+
 const renderState = (): void => {
   if (!settings) {
     return;
   }
 
   const copy = getCopy(settings.appLanguage);
-  const isSiteBlocked = activeHostname
-    ? isHostnameBlocked(activeHostname, settings.disabledSites)
-    : false;
+  const state = getSiteState(settings);
+  document.documentElement.lang = settings.appLanguage;
 
   enabledInput.checked = settings.enabled;
   correctionInput.checked = settings.correctionEnabled;
   translationInput.checked = settings.translationEnabled;
 
-  siteStatus.textContent = activeHostname
-    ? `${isSiteBlocked ? copy.popupDisabledOn : copy.popupActiveOn} ${activeHostname}`
-    : copy.popupNotAvailable;
+  const statusPrefix: Record<SiteState, string> = {
+    unavailable: copy.popupNotAvailable,
+    userBlocked: `${copy.popupDisabledOn} ${activeHostname}`,
+    safetyBlocked: `${copy.popupBlockedForSafety} ${activeHostname}`,
+    protectedPage: copy.popupProtectedPage,
+    active: `${copy.popupActiveOn} ${activeHostname}`,
+  };
+  siteStatus.textContent = statusPrefix[state];
+  siteStatus.dataset.state = state;
 
-  siteToggleButton.textContent = isSiteBlocked ? copy.popupEnableHere : copy.popupDisableHere;
-  siteToggleButton.disabled = !activeHostname;
+  siteToggleButton.textContent =
+    state === 'userBlocked'
+      ? copy.popupEnableHere
+      : state === 'safetyBlocked'
+        ? copy.builtinAllowButton
+        : copy.popupDisableHere;
+  siteToggleButton.disabled = state === 'unavailable';
   openOptionsButton.textContent = copy.popupOpenSettings;
 
   const enabledLabel = document.querySelector('[data-popup-label="enabled"]');
@@ -91,13 +121,23 @@ siteToggleButton.addEventListener('click', async () => {
     return;
   }
 
-  const normalizedHostname = normalizeSitePattern(activeHostname);
-  const isSiteBlocked = isHostnameBlocked(normalizedHostname, settings.disabledSites);
-  const disabledSites = isSiteBlocked
-    ? settings.disabledSites.filter((site) => normalizeSitePattern(site) !== normalizedHostname)
-    : [...settings.disabledSites, normalizedHostname].sort((a, b) => a.localeCompare(b));
+  const state = getSiteState(settings);
+  const hostname = normalizeSitePattern(activeHostname);
+  let disabledSites: string[];
 
-  await updatePublicSetting({ disabledSites });
+  if (state === 'userBlocked') {
+    // Remove every user pattern that blocks this host (exact or wildcard).
+    disabledSites = settings.disabledSites.filter((site) => {
+      const pattern = normalizeSitePattern(site);
+      return pattern.startsWith('!') || !isHostnameBlocked(hostname, [pattern]);
+    });
+  } else if (state === 'safetyBlocked') {
+    disabledSites = [...settings.disabledSites, `!${hostname}`];
+  } else {
+    disabledSites = [...settings.disabledSites, hostname];
+  }
+
+  await updatePublicSetting({ disabledSites: [...new Set(disabledSites)].sort((a, b) => a.localeCompare(b)) });
 });
 
 openOptionsButton.addEventListener('click', () => {
@@ -106,6 +146,7 @@ openOptionsButton.addEventListener('click', () => {
 
 void Promise.all([getPublicSettings(), getActiveTabUrl()]).then(([storedSettings, url]) => {
   settings = storedSettings;
+  activeUrl = url;
   activeHostname = getHostnameFromUrl(url);
   renderState();
 });

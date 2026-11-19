@@ -6,8 +6,13 @@
   "version": "0.1.0",
   "default_locale": "es",
   "minimum_chrome_version": "116",
-  "permissions": ["activeTab", "storage"],
-  "host_permissions": ["https://ai-gateway.vercel.sh/*"],
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://ai-gateway.vercel.sh/*"
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -25,17 +30,17 @@
   "commands": {
     "orta-correct": {
       "suggested_key": {
-        "default": "Ctrl+Shift+O",
-        "mac": "Command+Shift+O"
+        "default": "Alt+Shift+C",
+        "mac": "Alt+Shift+C"
       },
-      "description": "Correct the selected text"
+      "description": "__MSG_commandCorrect__"
     },
     "orta-translate": {
       "suggested_key": {
-        "default": "Ctrl+Shift+L",
-        "mac": "Command+Shift+L"
+        "default": "Alt+Shift+L",
+        "mac": "Alt+Shift+L"
       },
-      "description": "Translate the selected text"
+      "description": "__MSG_commandTranslate__"
     }
   },
   "icons": {
@@ -47,8 +52,12 @@
   "options_page": "options.html",
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle",
       "all_frames": true,
       "match_origin_as_fallback": false

@@ -2,18 +2,14 @@ import { DEFAULT_TARGET_LANGUAGE } from './languages';
 import { DEFAULT_APP_LANGUAGE } from './appLanguage';
 import { DEFAULT_MODEL_ID, MODEL_OPTIONS, type ModelId } from './messages';
 
-/** Retired model ids mapped to their replacement. */
-const MODEL_ID_MIGRATIONS: Record<string, ModelId> = {
-  'xai/grok-4.3': 'xai/grok-4.5',
-};
-
 const VALID_MODEL_IDS = new Set<string>(MODEL_OPTIONS.map((option) => option.id));
 
-const normalizeModelId = (model: string | undefined): string => {
-  if (!model) return DEFAULT_MODEL_ID;
-  const migrated = MODEL_ID_MIGRATIONS[model] ?? model;
-  return VALID_MODEL_IDS.has(migrated) ? migrated : DEFAULT_MODEL_ID;
-};
+/**
+ * Any model that is no longer offered (e.g. the retired xAI Grok ids, which the
+ * gateway no longer serves) falls back to the default so requests keep working.
+ */
+export const normalizeModelId = (model: string | undefined): ModelId =>
+  model && VALID_MODEL_IDS.has(model) ? (model as ModelId) : DEFAULT_MODEL_ID;
 
 export type PublicOrtaSettings = {
   enabled: boolean;
@@ -130,9 +126,13 @@ const migrateDisabledSitesIfNeeded = async (): Promise<string[] | null> => {
 export const getPublicSettings = async (): Promise<PublicOrtaSettings> => {
   const migrated = await migrateDisabledSitesIfNeeded();
 
+  // Only ask local storage for `disabledSites`: this runs in every page's content
+  // script, and the API key (also in local storage) must never be loaded there.
   const [sync, local] = await Promise.all([
     getFromStorage<SyncSettings>(chrome.storage.sync, syncDefaults),
-    getFromStorage<LocalSettings>(chrome.storage.local, localDefaults),
+    getFromStorage<Pick<LocalSettings, 'disabledSites'>>(chrome.storage.local, {
+      disabledSites: localDefaults.disabledSites,
+    }),
   ]);
 
   const model = normalizeModelId(sync.model);
@@ -144,7 +144,7 @@ export const getPublicSettings = async (): Promise<PublicOrtaSettings> => {
   return {
     ...sync,
     model,
-    disabledSites: migrated ?? local.disabledSites,
+    disabledSites: migrated ?? (Array.isArray(local.disabledSites) ? local.disabledSites : []),
   };
 };
 

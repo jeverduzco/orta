@@ -24,6 +24,18 @@ type CopyDictionary = {
   closeLabel: string;
   resultCorrectTitle: string;
   resultTranslateTitle: string;
+  replaceAction: string;
+  replaceDone: string;
+  replaceFailed: string;
+  retryAction: string;
+  cancelAction: string;
+  openSettingsAction: string;
+  workingCorrect: string;
+  workingTranslate: string;
+  textTooLong: string;
+  changeLanguage: string;
+  showChanges: string;
+  hideChanges: string;
 
   // Background errors
   apiKeyMissing: string;
@@ -31,6 +43,7 @@ type CopyDictionary = {
   gatewayAuthFailed: string;
   gatewayContactFailed: string;
   gatewayInvalid: string;
+  gatewayModelUnavailable: string;
   gatewayRateLimited: string;
   gatewayServerFailed: string;
   gatewayTimeout: string;
@@ -106,6 +119,9 @@ type CopyDictionary = {
   popupEnableHere: string;
   popupDisableHere: string;
   popupOpenSettings: string;
+  popupBlockedForSafety: string;
+  popupProtectedPage: string;
+  settingsSectionLabel: string;
 };
 
 const copies: Record<AppLanguage, CopyDictionary> = {
@@ -130,11 +146,24 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     closeLabel: 'Cerrar',
     resultCorrectTitle: 'Corregido',
     resultTranslateTitle: 'Traducido',
+    replaceAction: 'Reemplazar',
+    replaceDone: 'Reemplazado',
+    replaceFailed: 'No se pudo reemplazar aquí. Copia el texto.',
+    retryAction: 'Reintentar',
+    cancelAction: 'Cancelar',
+    openSettingsAction: 'Abrir ajustes',
+    workingCorrect: 'Corrigiendo…',
+    workingTranslate: 'Traduciendo…',
+    textTooLong: 'La selección es demasiado larga (máximo {max} caracteres).',
+    changeLanguage: 'Cambiar idioma',
+    showChanges: 'Ver cambios',
+    hideChanges: 'Ocultar cambios',
     apiKeyMissing: 'Configura tu API Key de Vercel AI Gateway en Orta.',
     correctionDisabled: 'La corrección ortográfica está desactivada.',
     gatewayAuthFailed: 'La API Key de Vercel AI Gateway no es válida o no tiene permisos.',
     gatewayContactFailed: 'No se pudo contactar Vercel AI Gateway.',
     gatewayInvalid: 'No se pudo validar la API Key con el modelo configurado.',
+    gatewayModelUnavailable: 'El modelo elegido no está disponible en Vercel AI Gateway. Elige otro en Ajustes.',
     gatewayRateLimited: 'Vercel AI Gateway limitó temporalmente las solicitudes. Intenta de nuevo en unos segundos.',
     gatewayServerFailed: 'Vercel AI Gateway no respondió correctamente. Intenta de nuevo más tarde.',
     gatewayTimeout: 'Vercel AI Gateway tardó demasiado en responder.',
@@ -203,6 +232,9 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     popupEnableHere: 'Activar en este sitio',
     popupDisableHere: 'Desactivar en este sitio',
     popupOpenSettings: 'Abrir ajustes',
+    popupBlockedForSafety: 'Bloqueado por seguridad en',
+    popupProtectedPage: 'Oculto en esta página (inicio de sesión o pago)',
+    settingsSectionLabel: 'Configuración de Orta',
   },
   en: {
     actionsLabel: 'Orta actions',
@@ -225,11 +257,24 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     closeLabel: 'Close',
     resultCorrectTitle: 'Corrected',
     resultTranslateTitle: 'Translated',
+    replaceAction: 'Replace',
+    replaceDone: 'Replaced',
+    replaceFailed: "Couldn't replace here. Copy the text instead.",
+    retryAction: 'Retry',
+    cancelAction: 'Cancel',
+    openSettingsAction: 'Open settings',
+    workingCorrect: 'Correcting…',
+    workingTranslate: 'Translating…',
+    textTooLong: 'The selection is too long (maximum {max} characters).',
+    changeLanguage: 'Change language',
+    showChanges: 'Show changes',
+    hideChanges: 'Hide changes',
     apiKeyMissing: 'Set your Vercel AI Gateway API key in Orta.',
     correctionDisabled: 'Spelling correction is disabled.',
     gatewayAuthFailed: 'The Vercel AI Gateway API key is invalid or lacks permissions.',
     gatewayContactFailed: 'Could not contact Vercel AI Gateway.',
     gatewayInvalid: 'Could not validate the API key with the configured model.',
+    gatewayModelUnavailable: 'The selected model is not available on Vercel AI Gateway. Pick another one in Settings.',
     gatewayRateLimited: 'Vercel AI Gateway temporarily rate-limited requests. Try again in a few seconds.',
     gatewayServerFailed: 'Vercel AI Gateway did not respond correctly. Try again later.',
     gatewayTimeout: 'Vercel AI Gateway took too long to respond.',
@@ -298,6 +343,9 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     popupEnableHere: 'Enable on this site',
     popupDisableHere: 'Disable on this site',
     popupOpenSettings: 'Open settings',
+    popupBlockedForSafety: 'Blocked for safety on',
+    popupProtectedPage: 'Hidden on this page (sign-in or payment)',
+    settingsSectionLabel: 'Orta settings',
   },
   pt: {
     actionsLabel: 'Ações do Orta',
@@ -320,11 +368,24 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     closeLabel: 'Fechar',
     resultCorrectTitle: 'Corrigido',
     resultTranslateTitle: 'Traduzido',
+    replaceAction: 'Substituir',
+    replaceDone: 'Substituído',
+    replaceFailed: 'Não foi possível substituir aqui. Copie o texto.',
+    retryAction: 'Tentar novamente',
+    cancelAction: 'Cancelar',
+    openSettingsAction: 'Abrir ajustes',
+    workingCorrect: 'Corrigindo…',
+    workingTranslate: 'Traduzindo…',
+    textTooLong: 'A seleção é longa demais (máximo de {max} caracteres).',
+    changeLanguage: 'Mudar idioma',
+    showChanges: 'Ver alterações',
+    hideChanges: 'Ocultar alterações',
     apiKeyMissing: 'Configure sua API Key do Vercel AI Gateway no Orta.',
     correctionDisabled: 'A correção ortográfica está desativada.',
     gatewayAuthFailed: 'A API Key do Vercel AI Gateway não é válida ou não tem permissões.',
     gatewayContactFailed: 'Não foi possível contatar o Vercel AI Gateway.',
     gatewayInvalid: 'Não foi possível validar a API Key com o modelo configurado.',
+    gatewayModelUnavailable: 'O modelo escolhido não está disponível no Vercel AI Gateway. Escolha outro em Ajustes.',
     gatewayRateLimited: 'O Vercel AI Gateway limitou temporariamente as solicitações. Tente novamente em alguns segundos.',
     gatewayServerFailed: 'O Vercel AI Gateway não respondeu corretamente. Tente novamente mais tarde.',
     gatewayTimeout: 'O Vercel AI Gateway demorou demais para responder.',
@@ -393,6 +454,9 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     popupEnableHere: 'Ativar neste site',
     popupDisableHere: 'Desativar neste site',
     popupOpenSettings: 'Abrir ajustes',
+    popupBlockedForSafety: 'Bloqueado por segurança em',
+    popupProtectedPage: 'Oculto nesta página (login ou pagamento)',
+    settingsSectionLabel: 'Configurações do Orta',
   },
 };
 

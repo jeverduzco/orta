@@ -72,3 +72,15 @@ describe('site exclusions', () => {
     ).toBe(false);
   });
 });
+
+describe('model migration', () => {
+  it('moves retired or unknown models to the default', async () => {
+    const { normalizeModelId } = await import('./settings');
+    const { DEFAULT_MODEL_ID } = await import('./messages');
+    expect(DEFAULT_MODEL_ID).toBe('meta/muse-ember');
+    expect(normalizeModelId('xai/grok-4.5')).toBe(DEFAULT_MODEL_ID);
+    expect(normalizeModelId('xai/grok-4.3')).toBe(DEFAULT_MODEL_ID);
+    expect(normalizeModelId(undefined)).toBe(DEFAULT_MODEL_ID);
+    expect(normalizeModelId('google/gemini-3.5-flash')).toBe('google/gemini-3.5-flash');
+  });
+});
