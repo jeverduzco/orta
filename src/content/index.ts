@@ -15,7 +15,7 @@ import { normalizeAppLanguage } from '../shared/appLanguage';
 import { isOrtaAvailableForUrl } from '../shared/sites';
 import { isPageSafeForOrta } from '../shared/pageGuard';
 import { diffWords, hasChanges } from '../shared/diff';
-import { SPARKLE_SVG_MARKUP } from '../shared/sparkleIcon';
+import { ORTA_SPARK_MARKUP } from '../shared/ortaGlyph';
 import {
   CONTENT_SCRIPT_COMMAND_TYPE,
   MAX_SELECTION_CHARS,
@@ -214,7 +214,7 @@ shadowRoot.innerHTML = `
           <button class="action-lang" data-lang="translate" type="button" aria-haspopup="listbox" aria-expanded="false"></button>
         </div>
       </div>
-      <button class="bubble-handle" id="bubble-handle" type="button" aria-expanded="false">${SPARKLE_SVG_MARKUP}</button>
+      <button class="bubble-handle" id="bubble-handle" type="button" aria-expanded="false">${ORTA_SPARK_MARKUP}</button>
       <div class="lang-picker" id="lang-picker" role="listbox"></div>
     </div>
     <section class="card" id="card" aria-live="polite">
@@ -716,7 +716,7 @@ const runAction = (action: OrtaAction): void => {
   // Fix the card width up front so streamed text never makes it (and its
   // buttons) jump sideways. Wider selections get a wider card.
   const selectionWidth = measureTarget(requestTarget)?.bounds.width ?? 0;
-  card.style.width = `${Math.round(clamp(selectionWidth, 300, Math.min(420, window.innerWidth - 2 * VIEWPORT_MARGIN)))}px`;
+  card.style.width = `${Math.round(clamp(selectionWidth, 340, Math.min(420, window.innerWidth - 2 * VIEWPORT_MARGIN)))}px`;
 
   setMode('working');
   renderWorking(action);

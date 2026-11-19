@@ -1,0 +1,270 @@
+/*
+ * Orta brand tokens — mirror of tokens.json in the Orta Brand Kit.
+ * Extension pages (popup, options) import this; the in-page UI keeps its own
+ * copy in src/content/styles.ts because it lives in a closed shadow root.
+ */
+:root {
+  color-scheme: light;
+
+  --violet: #6c3ce9;
+  --violet-text: #5a2fd6;
+  --violet-deep: #4b21b8;
+  --violet-soft: #ece6ff;
+  --spark: #ffc24b;
+  --spark-text: #8f5a00;
+  --on-violet: #ffffff;
+  --on-spark: #17131f;
+
+  --paper: #f6f4fb;
+  --surface: #ffffff;
+  --surface-raised: #f1eef8;
+  --line: #e4dff0;
+  --ink: #17131f;
+  --ink-muted: #5b5670;
+
+  --success: #1e7a45;
+  --danger: #c2302f;
+  --warning: #8f5a00;
+  --focus: #6c3ce9;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgb(23 19 31 / 0.06), 0 12px 32px -8px rgb(23 19 31 / 0.18);
+  --shadow-chip: 0 1px 2px rgb(23 19 31 / 0.06), 0 4px 12px -4px rgb(23 19 31 / 0.16);
+
+  --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --violet-text: #c9bbff;
+    --violet-soft: #2a2145;
+    --spark-text: #ffc24b;
+
+    --paper: #120f1a;
+    --surface: #1c1826;
+    --surface-raised: #262133;
+    --line: #332d42;
+    --ink: #f3f0fa;
+    --ink-muted: #a9a3bc;
+
+    --success: #4ade80;
+    --danger: #ff8a8a;
+    --warning: #ffc24b;
+    --focus: #b3a0ff;
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.2), 0 12px 32px -8px rgb(0 0 0 / 0.5);
+    --shadow-chip: 0 1px 2px rgb(0 0 0 / 0.18), 0 4px 12px -4px rgb(0 0 0 / 0.4);
+  }
+}
+
+/* ===== Shared building blocks ===== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 500 13px/1.5 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.label {
+  color: var(--ink-muted);
+  font: 700 11px/16px var(--font-ui);
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.brand-mark {
+  align-items: center;
+  background: var(--violet);
+  border-radius: 23.4%;
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+}
+
+.brand-mark svg {
+  height: 78%;
+  width: 78%;
+}
+
+.brand-mark .mark-spark {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: orta-twinkle 4.8s ease-in-out infinite;
+}
+
+@keyframes orta-twinkle {
+  0%, 70%, 100% { transform: scale(1) rotate(0deg); }
+  80% { transform: scale(1.14) rotate(12deg); }
+  90% { transform: scale(0.96) rotate(-4deg); }
+}
+
+.wordmark {
+  color: var(--ink);
+  display: block;
+  height: 18px;
+  width: auto;
+}
+
+/* Buttons: one primary per view; the rest secondary or ghost. */
+.btn {
+  align-items: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: 600 12.5px/1 var(--font-ui);
+  gap: 6px;
+  height: 34px;
+  justify-content: center;
+  padding: 0 14px;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+  white-space: nowrap;
+}
+
+.btn:hover { border-color: color-mix(in srgb, var(--violet) 35%, var(--line)); }
+.btn:active { transform: scale(0.98); }
+.btn:disabled { cursor: default; opacity: 0.55; transform: none; }
+.btn svg { flex: 0 0 auto; height: 14px; width: 14px; }
+
+.btn-primary {
+  background: var(--violet);
+  border-color: transparent;
+  color: var(--on-violet);
+}
+
+.btn-primary:hover { background: var(--violet); border-color: transparent; filter: brightness(1.08); }
+.btn-primary:active { background: var(--violet-deep); filter: none; }
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-muted);
+}
+
+.btn-ghost:hover { background: var(--surface-raised); border-color: transparent; color: var(--ink); }
+
+.icon-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.icon-btn:hover { background: var(--surface-raised); color: var(--ink); }
+.icon-btn svg { height: 16px; width: 16px; }
+
+/* Switch */
+input[role="switch"] {
+  appearance: none;
+  background: var(--line);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  flex: 0 0 auto;
+  height: 22px;
+  position: relative;
+  transition: background 160ms var(--ease-out);
+  width: 38px;
+}
+
+input[role="switch"]::after {
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  content: "";
+  height: 18px;
+  left: 2px;
+  position: absolute;
+  top: 2px;
+  transition: transform 160ms var(--ease-out);
+  width: 18px;
+}
+
+input[role="switch"]:checked { background: var(--violet); }
+input[role="switch"]:checked::after { transform: translateX(16px); }
+input[role="switch"]:disabled { cursor: default; opacity: 0.5; }
+
+/* Tool tile: each tool is one blade of the knife, with its own icon. */
+.tool-icon {
+  align-items: center;
+  background: var(--violet-soft);
+  border-radius: var(--radius-sm);
+  color: var(--violet-text);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.tool-icon svg { height: 16px; width: 16px; }
+
+kbd {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  color: var(--ink);
+  font: 500 11.5px/1 var(--font-mono);
+  padding: 3px 6px;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

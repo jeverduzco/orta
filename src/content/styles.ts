@@ -3,26 +3,29 @@
  * :host so the light theme only redefines tokens instead of every rule.
  */
 export const CONTENT_STYLES = `
+  /* Values mirror the Orta Brand Kit tokens (src/shared/brand.css). */
   :host {
-    --orta-surface: rgb(24 26 34 / 0.97);
-    --orta-surface-raised: rgb(255 255 255 / 0.05);
-    --orta-surface-hover: rgb(255 255 255 / 0.1);
-    --orta-border: rgb(255 255 255 / 0.12);
-    --orta-border-strong: rgb(167 139 250 / 0.5);
-    --orta-text: #eef0f5;
-    --orta-text-muted: rgb(220 222 232 / 0.78);
-    --orta-accent: #a78bfa;
-    --orta-accent-text: #c4b5fd;
-    --orta-accent-fill: linear-gradient(135deg, #a78bfa, #7c3aed);
-    --orta-accent-soft: rgb(167 139 250 / 0.2);
+    --orta-surface: #1C1826;
+    --orta-surface-raised: #262133;
+    --orta-surface-hover: #2F2940;
+    --orta-border: #332D42;
+    --orta-border-strong: #4A4161;
+    --orta-text: #F3F0FA;
+    --orta-text-muted: #A9A3BC;
+    --orta-brand: #6C3CE9;
+    --orta-spark: #FFC24B;
+    --orta-accent: #B3A0FF;
+    --orta-accent-text: #C9BBFF;
+    --orta-accent-fill: #6C3CE9;
+    --orta-accent-soft: #2A2145;
     --orta-on-accent: #ffffff;
-    --orta-success: #86efac;
-    --orta-success-soft: rgb(74 222 128 / 0.16);
-    --orta-danger: #fca5a5;
-    --orta-danger-soft: rgb(248 113 113 / 0.14);
+    --orta-success: #4ADE80;
+    --orta-success-soft: rgb(74 222 128 / 0.14);
+    --orta-danger: #FF8A8A;
+    --orta-danger-soft: rgb(255 138 138 / 0.12);
     --orta-shadow: 0 1px 2px rgb(0 0 0 / 0.2), 0 12px 32px -8px rgb(0 0 0 / 0.5);
     --orta-shadow-small: 0 1px 2px rgb(0 0 0 / 0.18), 0 4px 12px -4px rgb(0 0 0 / 0.4);
-    --orta-focus: 0 0 0 2px rgb(167 139 250 / 0.75);
+    --orta-focus: 0 0 0 2px #B3A0FF;
     --orta-font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
     all: initial;
@@ -32,24 +35,24 @@ export const CONTENT_STYLES = `
 
   @media (prefers-color-scheme: light) {
     :host {
-      --orta-surface: rgb(255 255 255 / 0.98);
-      --orta-surface-raised: rgb(17 24 39 / 0.04);
-      --orta-surface-hover: rgb(17 24 39 / 0.07);
-      --orta-border: rgb(17 24 39 / 0.12);
-      --orta-border-strong: rgb(124 58 237 / 0.45);
-      --orta-text: #111827;
-      --orta-text-muted: rgb(55 65 81 / 0.85);
-      --orta-accent: #7c3aed;
-      --orta-accent-text: #6d28d9;
-      --orta-accent-fill: linear-gradient(135deg, #8b5cf6, #6d28d9);
-      --orta-accent-soft: rgb(124 58 237 / 0.12);
-      --orta-success: #166534;
-      --orta-success-soft: rgb(22 163 74 / 0.12);
-      --orta-danger: #b91c1c;
-      --orta-danger-soft: rgb(220 38 38 / 0.08);
-      --orta-shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 12px 32px -8px rgb(0 0 0 / 0.18);
-      --orta-shadow-small: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 12px -4px rgb(0 0 0 / 0.16);
-      --orta-focus: 0 0 0 2px rgb(124 58 237 / 0.6);
+      --orta-surface: #FFFFFF;
+      --orta-surface-raised: #F1EEF8;
+      --orta-surface-hover: #E9E4F5;
+      --orta-border: #E4DFF0;
+      --orta-border-strong: #CFC6E4;
+      --orta-text: #17131F;
+      --orta-text-muted: #5B5670;
+      --orta-accent: #6C3CE9;
+      --orta-accent-text: #5A2FD6;
+      --orta-accent-fill: #6C3CE9;
+      --orta-accent-soft: #ECE6FF;
+      --orta-success: #1E7A45;
+      --orta-success-soft: rgb(30 122 69 / 0.12);
+      --orta-danger: #C2302F;
+      --orta-danger-soft: rgb(194 48 47 / 0.08);
+      --orta-shadow: 0 1px 2px rgb(23 19 31 / 0.06), 0 12px 32px -8px rgb(23 19 31 / 0.18);
+      --orta-shadow-small: 0 1px 2px rgb(23 19 31 / 0.06), 0 4px 12px -4px rgb(23 19 31 / 0.16);
+      --orta-focus: 0 0 0 2px #6C3CE9;
       color-scheme: light;
     }
   }
@@ -132,11 +135,11 @@ export const CONTENT_STYLES = `
 
   .bubble-handle {
     align-items: center;
-    background: var(--orta-surface);
-    border: 1px solid var(--orta-border);
-    border-radius: 999px;
+    background: var(--orta-brand);
+    border: 1px solid transparent;
+    border-radius: 7px;
     box-shadow: var(--orta-shadow-small);
-    color: var(--orta-accent-text);
+    color: #ffffff;
     cursor: pointer;
     display: inline-flex;
     flex: 0 0 auto;
@@ -156,11 +159,12 @@ export const CONTENT_STYLES = `
   }
 
   .bubble-handle svg { width: 13px; height: 13px; display: block; }
+  .glyph-spark { fill: var(--orta-spark); }
 
   .bubble-handle:hover,
   .bubble[data-expanded="true"] .bubble-handle,
   .bubble:focus-within .bubble-handle {
-    border-color: var(--orta-border-strong);
+    box-shadow: var(--orta-shadow-small), 0 0 0 3px var(--orta-accent-soft);
   }
 
   .bubble-handle:active { transform: scale(0.92); }
@@ -231,11 +235,15 @@ export const CONTENT_STYLES = `
     padding: 0 6px 0 2px;
   }
 
-  .action-main:hover,
-  .action-lang:hover,
-  .action-lang[aria-expanded="true"] {
+  .action-main:hover {
     background: var(--orta-surface-hover);
     color: var(--orta-text);
+  }
+
+  .action-lang:hover,
+  .action-lang[aria-expanded="true"] {
+    background: var(--orta-accent-soft);
+    color: var(--orta-accent-text);
   }
 
   .action-main:active,
@@ -326,6 +334,7 @@ export const CONTENT_STYLES = `
     flex-direction: column;
     gap: 8px;
     max-width: calc(100vw - 16px);
+    min-width: min(340px, calc(100vw - 16px));
     padding: 10px 10px 10px 12px;
     width: max-content;
   }
@@ -414,7 +423,7 @@ export const CONTENT_STYLES = `
 
   .caret {
     animation: orta-blink 1s steps(2, start) infinite;
-    background: var(--orta-accent);
+    background: var(--orta-spark);
     border-radius: 1px;
     display: inline-block;
     height: 1em;
@@ -517,6 +526,7 @@ export const CONTENT_STYLES = `
   }
 
   .btn-primary:hover { background: var(--orta-accent-fill); filter: brightness(1.08); }
+  .btn-primary:active { background: #4B21B8; filter: none; }
 
   .btn[data-done="true"] {
     background: var(--orta-success-soft);

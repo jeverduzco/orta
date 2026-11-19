@@ -122,6 +122,21 @@ type CopyDictionary = {
   popupBlockedForSafety: string;
   popupProtectedPage: string;
   settingsSectionLabel: string;
+  popupThisSite: string;
+  popupStatusActive: string;
+  popupStatusUserBlocked: string;
+  popupStatusSafety: string;
+  popupAllSites: string;
+  popupShortcuts: string;
+  generalTitle: string;
+  toolsTitle: string;
+  toolsDescription: string;
+  shortcutsTitle: string;
+  shortcutsDescription: string;
+  shortcutsChange: string;
+  shortcutNotSet: string;
+  sitesTitle: string;
+  connectionDescription: string;
 };
 
 const copies: Record<AppLanguage, CopyDictionary> = {
@@ -235,6 +250,21 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     popupBlockedForSafety: 'Bloqueado por seguridad en',
     popupProtectedPage: 'Oculto en esta página (inicio de sesión o pago)',
     settingsSectionLabel: 'Configuración de Orta',
+    popupThisSite: 'Este sitio',
+    popupStatusActive: 'Orta está activo aquí',
+    popupStatusUserBlocked: 'Desactivado en este sitio',
+    popupStatusSafety: 'Bloqueado por seguridad',
+    popupAllSites: 'En todas las páginas',
+    popupShortcuts: 'Atajos',
+    generalTitle: 'General',
+    toolsTitle: 'Herramientas',
+    toolsDescription: 'Cada herramienta recuerda su propio idioma.',
+    shortcutsTitle: 'Atajos de teclado',
+    shortcutsDescription: 'Actúan sobre el texto seleccionado en cualquier página.',
+    shortcutsChange: 'Cambiar atajos',
+    shortcutNotSet: 'Sin asignar',
+    sitesTitle: 'Sitios',
+    connectionDescription: 'Usa tu propia API Key. Se guarda solo en este navegador.',
   },
   en: {
     actionsLabel: 'Orta actions',
@@ -346,6 +376,21 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     popupBlockedForSafety: 'Blocked for safety on',
     popupProtectedPage: 'Hidden on this page (sign-in or payment)',
     settingsSectionLabel: 'Orta settings',
+    popupThisSite: 'This site',
+    popupStatusActive: 'Orta is active here',
+    popupStatusUserBlocked: 'Disabled on this site',
+    popupStatusSafety: 'Blocked for safety',
+    popupAllSites: 'On every page',
+    popupShortcuts: 'Shortcuts',
+    generalTitle: 'General',
+    toolsTitle: 'Tools',
+    toolsDescription: 'Each tool remembers its own language.',
+    shortcutsTitle: 'Keyboard shortcuts',
+    shortcutsDescription: 'They act on the selected text on any page.',
+    shortcutsChange: 'Change shortcuts',
+    shortcutNotSet: 'Not set',
+    sitesTitle: 'Sites',
+    connectionDescription: 'Uses your own API key. It stays in this browser only.',
   },
   pt: {
     actionsLabel: 'Ações do Orta',
@@ -457,6 +502,21 @@ const copies: Record<AppLanguage, CopyDictionary> = {
     popupBlockedForSafety: 'Bloqueado por segurança em',
     popupProtectedPage: 'Oculto nesta página (login ou pagamento)',
     settingsSectionLabel: 'Configurações do Orta',
+    popupThisSite: 'Este site',
+    popupStatusActive: 'O Orta está ativo aqui',
+    popupStatusUserBlocked: 'Desativado neste site',
+    popupStatusSafety: 'Bloqueado por segurança',
+    popupAllSites: 'Em todas as páginas',
+    popupShortcuts: 'Atalhos',
+    generalTitle: 'Geral',
+    toolsTitle: 'Ferramentas',
+    toolsDescription: 'Cada ferramenta lembra o próprio idioma.',
+    shortcutsTitle: 'Atalhos de teclado',
+    shortcutsDescription: 'Agem sobre o texto selecionado em qualquer página.',
+    shortcutsChange: 'Alterar atalhos',
+    shortcutNotSet: 'Não definido',
+    sitesTitle: 'Sites',
+    connectionDescription: 'Usa sua própria API Key. Ela fica só neste navegador.',
   },
 };
 

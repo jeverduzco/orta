@@ -49,6 +49,13 @@ const blockedList = getElement<HTMLUListElement>('#blocked-list');
 const builtinList = getElement<HTMLUListElement>('#builtin-list');
 const modelSelect = getElement<HTMLSelectElement>('#model');
 const toast = getElement<HTMLElement>('#toast');
+const shortcutList = getElement<HTMLUListElement>('#shortcut-list');
+const changeShortcutsButton = getElement<HTMLButtonElement>('#change-shortcuts');
+const toolIcons = {
+  correct: document.querySelector('#correction-enabled')?.closest('.tool')?.querySelector('.tool-icon')?.innerHTML ?? '',
+  translate: document.querySelector('#translation-enabled')?.closest('.tool')?.querySelector('.tool-icon')?.innerHTML ?? '',
+};
+let commandShortcuts: Partial<Record<'orta-correct' | 'orta-translate', string>> = {};
 
 let publicSettings: PublicOrtaSettings | null = null;
 let toastTimeout: number | undefined;
@@ -120,6 +127,37 @@ const applyOptionsLanguage = (language: string): void => {
     targetLanguageInput.value = normalizeTargetLanguage(publicSettings.targetLanguage);
     correctionLanguageInput.value = normalizeTargetLanguage(publicSettings.correctionLanguage);
   }
+};
+
+const renderShortcuts = (): void => {
+  const copy = getCopy(publicSettings?.appLanguage ?? 'es');
+  shortcutList.replaceChildren();
+  const rows: Array<['correct' | 'translate', string, string | undefined]> = [
+    ['correct', copy.correctAction, commandShortcuts['orta-correct']],
+    ['translate', copy.translateAction, commandShortcuts['orta-translate']],
+  ];
+  for (const [tool, label, keys] of rows) {
+    const item = document.createElement('li');
+    const name = document.createElement('span');
+    name.className = 'shortcut-name';
+    const icon = document.createElement('span');
+    icon.className = 'tool-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.innerHTML = toolIcons[tool];
+    name.append(icon, label);
+    const value = document.createElement(keys ? 'kbd' : 'span');
+    value.textContent = keys ?? copy.shortcutNotSet;
+    if (!keys) value.className = 'unset';
+    item.append(name, value);
+    shortcutList.append(item);
+  }
+};
+
+const syncToolStates = (): void => {
+  correctionInput.closest<HTMLElement>('.tool')?.setAttribute('data-disabled', String(!correctionInput.checked));
+  translationInput.closest<HTMLElement>('.tool')?.setAttribute('data-disabled', String(!translationInput.checked));
+  correctionLanguageInput.disabled = !correctionInput.checked;
+  targetLanguageInput.disabled = !translationInput.checked;
 };
 
 const showToast = (message: string): void => {
@@ -296,6 +334,11 @@ const renderSettings = (settings: PublicOrtaSettings, apiKey: string): void => {
   refreshApiStatusFromKey(apiKey);
   renderBlockedSites();
   renderBuiltinList();
+  renderShortcuts();
+  syncToolStates();
+  // First run: without a key nothing works, so Connection leads the page.
+  // Decided once on load so sections never jump while someone is typing.
+  document.body.dataset.needsKey = String(!apiKey);
 };
 
 const syncKeyVisibilityButton = (): void => {
@@ -366,10 +409,12 @@ enabledInput.addEventListener('change', () => {
 });
 
 correctionInput.addEventListener('change', () => {
+  syncToolStates();
   void updatePublicSetting({ correctionEnabled: correctionInput.checked });
 });
 
 translationInput.addEventListener('change', () => {
+  syncToolStates();
   void updatePublicSetting({ translationEnabled: translationInput.checked });
 });
 
@@ -382,6 +427,7 @@ appLanguageInput.addEventListener('change', () => {
     refreshApiStatusFromKey(apiInput.value.trim());
     renderBlockedSites();
     renderBuiltinList();
+    renderShortcuts();
     showToast(getCopy(appLanguage).appLanguageSaved);
   });
 });
@@ -439,6 +485,26 @@ blockedForm.addEventListener('submit', async (event) => {
   renderBlockedSites();
   showToast(copy.blockedSaved);
 });
+
+changeShortcutsButton.addEventListener('click', () => {
+  // chrome:// pages can't be linked to, but an extension page may open them in a tab.
+  void chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
+});
+
+// Shortcuts as the user configured them; refresh when they come back from Chrome's page.
+const loadShortcuts = (): void => {
+  void chrome.commands?.getAll().then((commands) => {
+    commandShortcuts = {};
+    for (const command of commands) {
+      if ((command.name === 'orta-correct' || command.name === 'orta-translate') && command.shortcut) {
+        commandShortcuts[command.name] = command.shortcut;
+      }
+    }
+    renderShortcuts();
+  });
+};
+loadShortcuts();
+window.addEventListener('focus', loadShortcuts);
 
 void Promise.all([getPublicSettings(), getSecretSettings()]).then(([settings, secrets]) => {
   renderModelOptions();

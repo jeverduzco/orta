@@ -6,7 +6,7 @@ Orta is a selection tool: the user highlights any text on the page and Orta offe
 
 ## Experience
 
-- When the user selects text (with mouse, touch, or keyboard) on any page, Orta shows a **22 px handle** with the Orta sparkle, docked to the **left of the selection's first line**. If there is no room on the left it docks above the line and the actions grow to the right. In inputs and textareas the position is measured with a mirror element, so it tracks the selected line rather than the whole field. It follows the selection on scroll/resize.
+- When the user selects text (with mouse, touch, or keyboard) on any page, Orta shows a **22 px violet handle** with the amber spark from the logo (only the spark: at that size the full glyph reads like a dropdown chevron), docked to the **left of the selection's first line**. If there is no room on the left it docks above the line and the actions grow to the right. In inputs and textareas the position is measured with a mirror element, so it tracks the selected line rather than the whole field. It follows the selection on scroll/resize.
 - Hovering the handle (or tapping it on touch) expands a compact chip with **Correct** and **Translate**, each followed by a visible language code (e.g. `ES`, `EN`). Clicking the code opens a language list with full names (keyboard: arrows, Home/End, Enter, Esc); long-press on the action still works.
 - When an action is pressed, a card opens above or below the selection (whichever has room; its width is fixed up front so nothing jumps). The text streams in as the model writes it, with a **Cancel** button.
 - The result card shows the text (selectable), a word-level diff for corrections (toggleable), **Retry**, **Copy**, and **Replace** when the selection is editable. Errors explain what failed and offer **Retry** for transient failures or **Open settings** for key/model problems.
@@ -14,8 +14,9 @@ Orta is a selection tool: the user highlights any text on the page and Orta offe
 - Translation uses a closed list of languages to avoid typos in the target language.
 - The Orta UI language is independent of the translation target language.
 - Correction and translation each have their own target language. The bubble exposes a per-action language chip; changing it persists the choice to settings, so it survives the next selection and page reloads (it does not reset to a single global default).
-- The popup lets the user turn Orta off globally or just for the current domain.
-- The options page concentrates the API key, global toggles, separate correction and translation target languages, AI model selection (Muse Ember, Flash, Minimax, DeepSeek via Vercel AI Gateway), exclusions, and a list of domains blocked by default for safety (banks, payments, SSO, government).
+- The popup shows the current site and its state (active, disabled by the user, blocked for safety, hidden on a login/payment page) with the one action that fits, the tools as rows (icon, language, switch), the global switch, and the real keyboard shortcuts from `chrome.commands`.
+- The options page is one column of sections: General (global switch, UI language), Tools (each tool with its own language), Keyboard shortcuts (with a button to Chrome's shortcut page), Connection (API key, model, test) and Sites (user exclusions and the built-in safety list). On first run, with no API key saved, Connection moves to the top.
+- Extension pages share `src/shared/brand.css`, a mirror of the Orta Brand Kit tokens; the in-page UI keeps the same values in `src/content/styles.ts`.
 - On pages flagged as sensitive (login/checkout-like URL paths, visible password fields, default-blocked domains), the bubble does not appear.
 - **AI model selection** is available in the Options page. Users can switch between `meta/muse-ember` (default), `google/gemini-3.5-flash`, `minimax/minimax-m3`, and `deepseek/deepseek-v4-flash`. The choice is persisted in `chrome.storage.sync`; retired ids (such as the xAI Grok models the gateway no longer serves) migrate to the default.
 

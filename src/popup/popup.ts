@@ -1,5 +1,7 @@
 import { getPublicSettings, setPublicSettings, type PublicOrtaSettings } from '../shared/settings';
 import { getCopy } from '../shared/i18n';
+import { normalizeAppLanguage } from '../shared/appLanguage';
+import { getTargetLanguageLabel, normalizeTargetLanguage } from '../shared/languages';
 import {
   getHostnameFromUrl,
   isHostnameBlocked,
@@ -20,7 +22,13 @@ const getElement = <T extends HTMLElement>(selector: string): T => {
   return element;
 };
 
+const siteCard = getElement<HTMLElement>('.site-card');
+const siteHost = getElement<HTMLElement>('#site-host');
 const siteStatus = getElement<HTMLElement>('#site-status');
+const toolsSection = getElement<HTMLElement>('.tools');
+const correctMeta = getElement<HTMLElement>('#correct-meta');
+const translateMeta = getElement<HTMLElement>('#translate-meta');
+const shortcutsLine = getElement<HTMLElement>('#shortcuts');
 const enabledInput = getElement<HTMLInputElement>('#enabled');
 const correctionInput = getElement<HTMLInputElement>('#correction-enabled');
 const translationInput = getElement<HTMLInputElement>('#translation-enabled');
@@ -52,6 +60,35 @@ const updatePublicSetting = async (values: Partial<PublicOrtaSettings>): Promise
   renderState();
 };
 
+let shortcuts: Partial<Record<'orta-correct' | 'orta-translate', string>> = {};
+
+const renderShortcuts = (): void => {
+  if (!settings) return;
+  const copy = getCopy(settings.appLanguage);
+  const items = [
+    [copy.popupCorrect, shortcuts['orta-correct']],
+    [copy.popupTranslate, shortcuts['orta-translate']],
+  ].filter((item): item is [string, string] => !!item[1]);
+  shortcutsLine.replaceChildren();
+  shortcutsLine.hidden = items.length === 0;
+  items.forEach(([label, keys], index) => {
+    if (index > 0) shortcutsLine.append(' · ');
+    const kbd = document.createElement('kbd');
+    kbd.textContent = keys;
+    shortcutsLine.append(`${label} `, kbd);
+  });
+};
+
+// Real shortcuts as the user configured them in chrome://extensions/shortcuts.
+void chrome.commands?.getAll().then((commands) => {
+  for (const command of commands) {
+    if ((command.name === 'orta-correct' || command.name === 'orta-translate') && command.shortcut) {
+      shortcuts[command.name] = command.shortcut;
+    }
+  }
+  renderShortcuts();
+});
+
 type SiteState = 'unavailable' | 'userBlocked' | 'safetyBlocked' | 'protectedPage' | 'active';
 
 const getSiteState = (current: PublicOrtaSettings): SiteState => {
@@ -77,15 +114,16 @@ const renderState = (): void => {
   correctionInput.checked = settings.correctionEnabled;
   translationInput.checked = settings.translationEnabled;
 
-  const statusPrefix: Record<SiteState, string> = {
+  const statusText: Record<SiteState, string> = {
     unavailable: copy.popupNotAvailable,
-    userBlocked: `${copy.popupDisabledOn} ${activeHostname}`,
-    safetyBlocked: `${copy.popupBlockedForSafety} ${activeHostname}`,
+    userBlocked: copy.popupStatusUserBlocked,
+    safetyBlocked: copy.popupStatusSafety,
     protectedPage: copy.popupProtectedPage,
-    active: `${copy.popupActiveOn} ${activeHostname}`,
+    active: copy.popupStatusActive,
   };
-  siteStatus.textContent = statusPrefix[state];
-  siteStatus.dataset.state = state;
+  siteCard.dataset.state = state;
+  siteHost.textContent = state === 'unavailable' ? 'Orta' : activeHostname;
+  siteStatus.textContent = statusText[state];
 
   siteToggleButton.textContent =
     state === 'userBlocked'
@@ -93,15 +131,28 @@ const renderState = (): void => {
       : state === 'safetyBlocked'
         ? copy.builtinAllowButton
         : copy.popupDisableHere;
-  siteToggleButton.disabled = state === 'unavailable';
-  openOptionsButton.textContent = copy.popupOpenSettings;
+  siteToggleButton.hidden = state === 'unavailable';
+  openOptionsButton.setAttribute('aria-label', copy.popupOpenSettings);
+  openOptionsButton.title = copy.popupOpenSettings;
 
-  const enabledLabel = document.querySelector('[data-popup-label="enabled"]');
-  const correctLabel = document.querySelector('[data-popup-label="correct"]');
-  const translateLabel = document.querySelector('[data-popup-label="translate"]');
-  if (enabledLabel) enabledLabel.textContent = copy.popupEnabled;
-  if (correctLabel) correctLabel.textContent = copy.popupCorrect;
-  if (translateLabel) translateLabel.textContent = copy.popupTranslate;
+  const app = normalizeAppLanguage(settings.appLanguage);
+  correctMeta.textContent = getTargetLanguageLabel(normalizeTargetLanguage(settings.correctionLanguage), app);
+  translateMeta.textContent = `→ ${getTargetLanguageLabel(normalizeTargetLanguage(settings.targetLanguage), app)}`;
+  toolsSection.dataset.disabled = String(!settings.enabled);
+
+  const labels: Record<string, string> = {
+    thisSite: copy.popupThisSite,
+    tools: copy.toolsTitle,
+    correct: copy.popupCorrect,
+    translate: copy.popupTranslate,
+    enabled: copy.popupEnabled,
+    allSites: copy.popupAllSites,
+  };
+  document.querySelectorAll<HTMLElement>('[data-popup-label]').forEach((element) => {
+    const text = labels[element.dataset.popupLabel ?? ''];
+    if (text) element.textContent = text;
+  });
+  renderShortcuts();
 };
 
 enabledInput.addEventListener('change', () => {

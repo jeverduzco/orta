@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,37 +7,57 @@
     <title>Orta</title>
   </head>
   <body>
-    <main class="popup-shell">
+    <main class="popup">
       <header class="popup-header">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path class="spark-main" d="M11 3 L12.6 9.4 L19 11 L12.6 12.6 L11 19 L9.4 12.6 L3 11 L9.4 9.4 Z" fill="currentColor" fill-opacity="0.22" />
-            <path class="spark-mini" d="M18 2 L18.7 4.3 L21 5 L18.7 5.7 L18 8 L17.3 5.7 L15 5 L17.3 4.3 Z" fill="currentColor" fill-opacity="0.22" />
-          </svg>
-        </span>
-        <div>
-          <p>Orta</p>
-          <strong id="site-status">Loading site…</strong>
-        </div>
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 128 128" focusable="false"><g stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" fill="none"><path d="M64 100L25.89 78"/><path d="M64 100L43.71 56.5"/><path d="M64 100L84.29 56.5"/><path d="M64 100L102.11 78"/></g><circle cx="64" cy="100" r="12" fill="#FFFFFF"/><circle cx="64" cy="100" r="4.5" fill="#4B21B8"/><path class="mark-spark" d="M64 18 Q67.1 34.9 84 38 Q67.1 41.1 64 58 Q60.9 41.1 44 38 Q60.9 34.9 64 18Z" fill="#FFC24B"/></svg></span>
+        <svg class="wordmark" viewBox="-6 -6 188 72" role="img" aria-label="Orta"><g fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="40" r="18.5"/><path d="M63.5 58.5V40"/><path d="M63.5 40A18.5 18.5 0 0 1 82 21.5H118"/><path d="M104 6V46A12.5 12.5 0 0 0 116.5 58.5"/><circle cx="152" cy="40" r="18.5"/><path d="M170.5 21.5V58.5"/></g></svg>
+        <button class="icon-btn header-action" id="open-options" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
       </header>
 
-      <section class="quick-card">
-        <label class="toggle-row">
-          <span data-popup-label="enabled">Orta enabled</span>
-          <input id="enabled" type="checkbox" role="switch" />
-        </label>
-        <label class="toggle-row">
-          <span data-popup-label="correct">Correct</span>
-          <input id="correction-enabled" type="checkbox" role="switch" />
-        </label>
-        <label class="toggle-row">
-          <span data-popup-label="translate">Translate</span>
-          <input id="translation-enabled" type="checkbox" role="switch" />
-        </label>
+      <section class="site-card" aria-labelledby="site-host">
+        <p class="label" data-popup-label="thisSite">Este sitio</p>
+        <div class="site-row">
+          <span class="status-dot" id="site-dot" aria-hidden="true"></span>
+          <div class="site-text">
+            <strong id="site-host">—</strong>
+            <span id="site-status"></span>
+          </div>
+        </div>
+        <button class="btn site-toggle" id="site-toggle" type="button"></button>
       </section>
 
-      <button class="site-toggle" id="site-toggle" type="button">Disable on this site</button>
-      <button class="settings-button" id="open-options" type="button">Open settings</button>
+      <section class="tools" aria-labelledby="tools-title">
+        <p class="label" id="tools-title" data-popup-label="tools">Herramientas</p>
+        <ul class="tool-list">
+          <li class="tool-row">
+            <span class="tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="m15 6 3 3"/></svg></span>
+            <label class="tool-text" for="correction-enabled">
+              <strong data-popup-label="correct">Corregir</strong>
+              <span id="correct-meta"></span>
+            </label>
+            <input id="correction-enabled" type="checkbox" role="switch" />
+          </li>
+          <li class="tool-row">
+            <span class="tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m14 22 5-10 5 10"/><path d="M15.5 18h7"/></svg></span>
+            <label class="tool-text" for="translation-enabled">
+              <strong data-popup-label="translate">Traducir</strong>
+              <span id="translate-meta"></span>
+            </label>
+            <input id="translation-enabled" type="checkbox" role="switch" />
+          </li>
+        </ul>
+      </section>
+
+      <footer class="popup-footer">
+        <label class="master" for="enabled">
+          <span class="master-text">
+            <strong data-popup-label="enabled">Orta activo</strong>
+            <span data-popup-label="allSites">En todas las páginas</span>
+          </span>
+          <input id="enabled" type="checkbox" role="switch" />
+        </label>
+        <p class="shortcuts" id="shortcuts" hidden></p>
+      </footer>
     </main>
     <script type="module" src="/src/popup/popup.ts"></script>
   </body>

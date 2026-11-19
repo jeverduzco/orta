@@ -1,5 +1,7 @@
 # Orta
 
+<img src="brand/orta-lockup-ink.svg" alt="Orta" width="220">
+
 Orta is a Chrome (Manifest V3) extension that **corrects and translates any text you select** — anywhere on the page. It works on inputs, contenteditable composers, articles, comments, code snippets, anything selectable. Powered by [Vercel AI Gateway](https://vercel.com/ai-gateway). The AI model is configurable in the Options page.
 
 > Select text → a small bubble appears with **Correct** and **Translate** → the result streams into a card with **Copy** and, in editable fields, **Replace** (undoable with Cmd/Ctrl+Z). Read-only pages are never modified.
@@ -76,6 +78,10 @@ Models no longer offered (for example the retired xAI Grok ids, which the gatewa
 
 Each user supplies their own API key. If you want to ship Orta with a managed key (e.g. for a published Chrome Web Store build), proxy these requests through your own backend so the key never lives in the extension bundle.
 
+## Brand
+
+Orta aims to be a Swiss-army knife of AI utilities in the browser: the logo is an opened multitool, four tools fanning out of one rivet with the AI spark rising from the middle. Violet `#6C3CE9` is the brand fill, amber `#FFC24B` is reserved for the spark, and every fill is flat. Logo files, the palette and how to regenerate the extension icons are in [`brand/`](brand/README.md).
+
 ## Project layout
 
 ```
@@ -85,6 +91,7 @@ src/options/      Full settings page
 src/popup/        Per-site quick toggles
 src/shared/       Types, settings, i18n, domain matching
 public/           manifest.json, _locales/, icons/
+brand/            Logo sources, palette, icon generator
 docs/design.md    Product & architecture notes
 scripts/build.mjs Custom Vite build pipeline
 ```

@@ -1,81 +1,107 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <title>Orta Settings</title>
+    <title>Orta · Ajustes</title>
   </head>
   <body>
-    <main id="app" class="orta-options-shell">
-      <section class="hero" aria-labelledby="settings-title">
-        <div class="brand-lockup">
-          <span class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path class="spark-main" d="M11 3 L12.6 9.4 L19 11 L12.6 12.6 L11 19 L9.4 12.6 L3 11 L9.4 9.4 Z" fill="currentColor" fill-opacity="0.22" />
-              <path class="spark-mini" d="M18 2 L18.7 4.3 L21 5 L18.7 5.7 L18 8 L17.3 5.7 L15 5 L17.3 4.3 Z" fill="currentColor" fill-opacity="0.22" />
-            </svg>
-          </span>
-          <div>
-            <p class="eyebrow">Orta</p>
-            <h1 id="settings-title" data-i18n="settingsTitle">Ajustes</h1>
-          </div>
+    <main id="app" class="options">
+      <header class="page-header">
+        <div class="lockup" aria-hidden="true">
+          <span class="brand-mark"><svg viewBox="0 0 128 128" focusable="false"><g stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" fill="none"><path d="M64 100L25.89 78"/><path d="M64 100L43.71 56.5"/><path d="M64 100L84.29 56.5"/><path d="M64 100L102.11 78"/></g><circle cx="64" cy="100" r="12" fill="#FFFFFF"/><circle cx="64" cy="100" r="4.5" fill="#4B21B8"/><path class="mark-spark" d="M64 18 Q67.1 34.9 84 38 Q67.1 41.1 64 58 Q60.9 41.1 44 38 Q60.9 34.9 64 18Z" fill="#FFC24B"/></svg></span>
+          <svg class="wordmark" viewBox="-6 -6 188 72" role="img" aria-label="Orta"><g fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="40" r="18.5"/><path d="M63.5 58.5V40"/><path d="M63.5 40A18.5 18.5 0 0 1 82 21.5H118"/><path d="M104 6V46A12.5 12.5 0 0 0 116.5 58.5"/><circle cx="152" cy="40" r="18.5"/><path d="M170.5 21.5V58.5"/></g></svg>
         </div>
-        <p class="hero-copy">
-          <span data-i18n="heroCopy">Corrige y traduce texto directamente donde escribes, sin sacar el foco de la pagina.</span>
-        </p>
-      </section>
+        <h1 id="settings-title" data-i18n="settingsTitle">Ajustes</h1>
+        <p class="page-intro" data-i18n="heroCopy">Corrige y traduce texto directamente donde escribes, sin sacar el foco de la página.</p>
+      </header>
 
-      <section class="settings-grid" aria-label="Configuración de Orta" data-i18n-aria="settingsSectionLabel">
-        <form class="panel api-panel" id="api-form">
-          <div class="panel-heading">
-            <div>
-              <p class="section-kicker">Vercel AI Gateway</p>
-              <h2 data-i18n="connectionTitle">Conexión</h2>
+      <div class="sections" aria-label="Configuración de Orta" data-i18n-aria="settingsSectionLabel">
+        <section class="panel" aria-labelledby="general-title">
+          <h2 id="general-title" data-i18n="generalTitle">General</h2>
+          <div class="rows">
+            <label class="row" for="enabled">
+              <span class="row-text">
+                <strong data-i18n="enableTitle">Activar Orta</strong>
+                <small data-i18n="enableDescription">Muestra una burbuja al seleccionar texto en cualquier página.</small>
+              </span>
+              <input id="enabled" type="checkbox" role="switch" />
+            </label>
+            <div class="row">
+              <label class="row-text" for="app-language">
+                <strong data-i18n="appLanguageLabel">Idioma de Orta</strong>
+              </label>
+              <select id="app-language"></select>
             </div>
-            <span class="status-pill" id="api-status">Sin validar</span>
           </div>
+        </section>
+
+        <section class="panel" aria-labelledby="tools-title">
+          <div class="panel-head">
+            <h2 id="tools-title" data-i18n="toolsTitle">Herramientas</h2>
+            <p class="panel-note" data-i18n="toolsDescription">Cada herramienta recuerda su propio idioma.</p>
+          </div>
+          <div class="rows">
+            <div class="tool">
+              <label class="row" for="correction-enabled">
+                <span class="tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="m15 6 3 3"/></svg></span>
+                <span class="row-text">
+                  <strong data-i18n="correctionTitle">Corrección ortográfica</strong>
+                  <small data-i18n="correctionDescription">Reescribe conservando idioma, tono y formato.</small>
+                </span>
+                <input id="correction-enabled" type="checkbox" role="switch" />
+              </label>
+              <label class="tool-setting" for="correction-language">
+                <span data-i18n="correctionLanguageLabel">Idioma de corrección</span>
+                <select id="correction-language"></select>
+              </label>
+            </div>
+            <div class="tool">
+              <label class="row" for="translation-enabled">
+                <span class="tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m14 22 5-10 5 10"/><path d="M15.5 18h7"/></svg></span>
+                <span class="row-text">
+                  <strong data-i18n="translationTitle">Traducción</strong>
+                  <small data-i18n="translationDescription">Traduce el texto seleccionado al idioma destino.</small>
+                </span>
+                <input id="translation-enabled" type="checkbox" role="switch" />
+              </label>
+              <label class="tool-setting" for="target-language">
+                <span data-i18n="translationLanguageLabel">Idioma de traducción</span>
+                <select id="target-language"></select>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="shortcuts-title">
+          <div class="panel-head">
+            <h2 id="shortcuts-title" data-i18n="shortcutsTitle">Atajos de teclado</h2>
+            <p class="panel-note" data-i18n="shortcutsDescription">Actúan sobre el texto seleccionado en cualquier página.</p>
+          </div>
+          <ul class="rows shortcut-list" id="shortcut-list"></ul>
+          <div class="panel-actions">
+            <button class="btn" id="change-shortcuts" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M7 15h10"/></svg><span data-i18n="shortcutsChange">Cambiar atajos</span></button>
+          </div>
+        </section>
+
+        <form class="panel" id="api-form" aria-labelledby="connection-title">
+          <div class="panel-head">
+            <div>
+              <p class="label">Vercel AI Gateway</p>
+              <h2 id="connection-title" data-i18n="connectionTitle">Conexión</h2>
+            </div>
+            <span class="status-pill" id="api-status"></span>
+          </div>
+          <p class="panel-note" data-i18n="connectionDescription">Usa tu propia API Key. Se guarda solo en este navegador.</p>
 
           <label class="field" for="api-key">
             <span data-i18n="apiKeyLabel">API Key</span>
             <span class="input-row">
-              <input
-                id="api-key"
-                type="password"
-                autocomplete="off"
-                spellcheck="false"
-                placeholder="vck_..."
-              />
-              <button class="icon-button" id="toggle-key" type="button" aria-label="Mostrar API Key" aria-pressed="false">
-                <svg
-                  class="key-icon key-icon-visible"
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M2.06 12.35a1 1 0 0 1 0-.7 11.75 11.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 11.75 11.75 0 0 1-19.88 0Z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-                <svg
-                  class="key-icon key-icon-hidden"
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="m15 18-.72-3.25" />
-                  <path d="M2 8a10.65 10.65 0 0 0 20 0" />
-                  <path d="m20 15-1.73-2.05" />
-                  <path d="m4 15 1.73-2.05" />
-                  <path d="m9 18 .72-3.25" />
-                </svg>
+              <input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="vck_..." />
+              <button class="icon-btn" id="toggle-key" type="button" aria-label="Mostrar API Key" aria-pressed="false">
+                  <svg class="key-icon key-icon-visible" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.06 12.35a1 1 0 0 1 0-.7 11.75 11.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 11.75 11.75 0 0 1-19.88 0Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="key-icon key-icon-hidden" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-.72-3.25"/><path d="M2 8a10.65 10.65 0 0 0 20 0"/><path d="m20 15-1.73-2.05"/><path d="m4 15 1.73-2.05"/><path d="m9 18 .72-3.25"/></svg>
               </button>
             </span>
           </label>
@@ -85,99 +111,37 @@
             <select id="model"></select>
           </label>
 
-          <div class="form-actions">
-            <button class="primary-button" type="submit" data-i18n="saveButton">Guardar</button>
-            <button class="secondary-button" id="test-key" type="button" data-i18n="testConnectionButton">Probar conexión</button>
+          <div class="panel-actions">
+            <button class="btn" id="test-key" type="button" data-i18n="testConnectionButton">Probar conexión</button>
+            <button class="btn btn-primary" type="submit" data-i18n="saveButton">Guardar</button>
           </div>
         </form>
 
-        <section class="panel">
-          <div class="panel-heading">
-            <div>
-              <p class="section-kicker" data-i18n="featuresKicker">Funciones</p>
-              <h2 data-i18n="behaviorTitle">Comportamiento</h2>
-            </div>
+        <section class="panel" aria-labelledby="sites-title">
+          <div class="panel-head">
+            <h2 id="sites-title" data-i18n="sitesTitle">Sitios</h2>
           </div>
 
-          <div class="toggle-list">
-            <label class="toggle-row">
-              <span>
-                <strong data-i18n="enableTitle">Activar Orta</strong>
-                <small data-i18n="enableDescription">Muestra una burbuja al seleccionar texto en cualquier página.</small>
-              </span>
-              <input id="enabled" type="checkbox" role="switch" />
-            </label>
-
-            <label class="toggle-row">
-              <span>
-                <strong data-i18n="correctionTitle">Corrección ortográfica</strong>
-                <small data-i18n="correctionDescription">Reescribe conservando idioma, tono y formato.</small>
-              </span>
-              <input id="correction-enabled" type="checkbox" role="switch" />
-            </label>
-
-            <label class="toggle-row">
-              <span>
-                <strong data-i18n="translationTitle">Traducción</strong>
-                <small data-i18n="translationDescription">Traduce el texto seleccionado al idioma destino.</small>
-              </span>
-              <input id="translation-enabled" type="checkbox" role="switch" />
-            </label>
+          <div class="subsection">
+            <p class="label" data-i18n="blockedKicker">Sitios desactivados</p>
+            <form class="inline-form" id="blocked-form">
+              <label class="sr-only" for="blocked-site" data-i18n="domainPatternLabel">Dominio o patrón</label>
+              <input id="blocked-site" type="text" placeholder="app.example.com · *.empresa.com" />
+              <button class="btn" type="submit" data-i18n="addButton">Agregar</button>
+            </form>
+            <ul class="site-list" id="blocked-list" aria-live="polite"></ul>
           </div>
 
-          <label class="field compact" for="app-language">
-            <span data-i18n="appLanguageLabel">Idioma de Orta</span>
-            <select id="app-language"></select>
-          </label>
-
-          <label class="field compact" for="correction-language">
-            <span data-i18n="correctionLanguageLabel">Idioma de corrección</span>
-            <select id="correction-language"></select>
-          </label>
-
-          <label class="field compact" for="target-language">
-            <span data-i18n="translationLanguageLabel">Idioma de traducción</span>
-            <select id="target-language"></select>
-          </label>
+          <div class="subsection">
+            <p class="label" data-i18n="builtinBlockedTitle">Sitios bloqueados por seguridad</p>
+            <p class="panel-note" data-i18n="builtinBlockedDescription">Orta no aparece en estos sitios por defecto: bancos, pagos, inicio de sesión y gobierno. Puedes activarlo en uno específico si lo necesitas.</p>
+            <details class="builtin-details">
+              <summary><span data-i18n="builtinShowList">Ver lista completa</span></summary>
+              <ul class="site-list builtin-list" id="builtin-list" aria-live="polite"></ul>
+            </details>
+          </div>
         </section>
-
-        <section class="panel blocked-panel">
-          <div class="panel-heading">
-            <div>
-              <p class="section-kicker" data-i18n="blockedKicker">Sitios desactivados</p>
-              <h2 data-i18n="exclusionsTitle">Exclusiones</h2>
-            </div>
-          </div>
-
-          <form class="blocked-form" id="blocked-form">
-            <label class="field compact" for="blocked-site">
-              <span data-i18n="domainPatternLabel">Dominio o patron</span>
-              <input id="blocked-site" type="text" placeholder="app.example.com o *.empresa.com" />
-            </label>
-            <button class="secondary-button" type="submit" data-i18n="addButton">Agregar</button>
-          </form>
-
-          <ul class="blocked-list" id="blocked-list" aria-live="polite"></ul>
-        </section>
-
-        <section class="panel builtin-panel">
-          <div class="panel-heading">
-            <div>
-              <p class="section-kicker" data-i18n="builtinBlockedKicker">Seguridad por defecto</p>
-              <h2 data-i18n="builtinBlockedTitle">Sitios bloqueados por seguridad</h2>
-            </div>
-          </div>
-
-          <p class="panel-description" data-i18n="builtinBlockedDescription">
-            Orta no aparece en estos sitios por defecto: bancos, pagos, inicio de sesión y gobierno. Puedes activarlo en uno específico si lo necesitas.
-          </p>
-
-          <details class="builtin-details">
-            <summary class="builtin-summary"><span data-i18n="builtinShowList">Ver lista completa</span></summary>
-            <ul class="blocked-list builtin-list" id="builtin-list" aria-live="polite"></ul>
-          </details>
-        </section>
-      </section>
+      </div>
 
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </main>
